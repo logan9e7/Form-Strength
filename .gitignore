@@ -1,0 +1,6 @@
+build/
+outputs/
+*.p12
+*.jks
+signing-config.json
+.env
