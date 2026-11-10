@@ -4,3 +4,8 @@ outputs/
 *.jks
 signing-config.json
 .env
+*.db
+*.db-shm
+*.db-wal
+node_modules/
+.openai/

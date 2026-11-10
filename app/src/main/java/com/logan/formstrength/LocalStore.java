@@ -60,7 +60,12 @@ final class LocalStore extends SQLiteOpenHelper {
         JSONObject p=new JSONObject();p.put("id",foodId(data));p.put("day",day(data));
         p.put("name",text(data,"name",120,true));p.put("portion",text(data,"portion",100,true));
         String meal=text(data,"meal",12,true);require(meal.matches("Breakfast|Lunch|Dinner|Snacks"),"Choose a valid meal.");p.put("meal",meal);
-        double c=number(data,"calories",0,10000),s=number(data,"servings",0.01,100);require(c*s<=20000,"Check calories and servings.");p.put("calories",c);p.put("servings",s);return p;
+        double c=number(data,"calories",0,10000),s=number(data,"servings",0.01,100);require(c*s<=20000,"Check calories and servings.");p.put("calories",c);p.put("servings",s);
+        if(Boolean.TRUE.equals(data.opt("estimated"))){
+            p.put("estimated",true);p.put("estimateBasis",text(data,"estimateBasis",500,false));
+            JSONArray components=data.optJSONArray("components");if(components!=null){require(components.length()<=20,"Too many foods in one meal.");JSONArray clean=new JSONArray();for(int i=0;i<components.length();i++){JSONObject component=components.getJSONObject(i);clean.put(new JSONObject().put("label",text(component,"label",180,true)).put("calories",number(component,"calories",0,20000)).put("source",text(component,"source",120,true)));}p.put("components",clean);}
+        }
+        return p;
     }
     private void putLog(SQLiteDatabase db,JSONObject p,int conflict) throws JSONException{
         ContentValues v=new ContentValues();v.put("day",p.getString("day"));v.put("payload",p.toString());db.insertWithOnConflict("daily_logs",null,v,conflict);

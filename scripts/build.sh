@@ -18,8 +18,8 @@ PY
 "$ANDROID_BUILD_TOOLS/zipalign" -f -p 4 build/base.apk build/aligned.apk
 if [[ -n "${APK_KEYSTORE:-}" ]]; then
  : "${APK_KEYSTORE_PASSWORD:?Set signing password in environment}"
- "$ANDROID_BUILD_TOOLS/apksigner" sign --ks "$APK_KEYSTORE" --ks-key-alias form-strength --ks-pass env:APK_KEYSTORE_PASSWORD --key-pass env:APK_KEYSTORE_PASSWORD --out outputs/Form-Strength-1.0.0.apk build/aligned.apk
- "$ANDROID_BUILD_TOOLS/apksigner" verify --verbose --print-certs outputs/Form-Strength-1.0.0.apk
+ "$ANDROID_BUILD_TOOLS/apksigner" sign --ks "$APK_KEYSTORE" --ks-key-alias form-strength --ks-pass env:APK_KEYSTORE_PASSWORD --key-pass env:APK_KEYSTORE_PASSWORD --out outputs/Form-Strength-1.1.0.apk build/aligned.apk
+ "$ANDROID_BUILD_TOOLS/apksigner" verify --verbose --print-certs outputs/Form-Strength-1.1.0.apk
 else
  cp build/aligned.apk outputs/Form-Strength-unsigned.apk
  echo 'Unsigned APK built. Set APK_KEYSTORE and APK_KEYSTORE_PASSWORD for an installable release.'

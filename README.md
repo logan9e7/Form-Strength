@@ -3,7 +3,7 @@
 An installable Android application with bundled UI and native SQLite storage. No login, backend, analytics, runtime network access, Neon or Render. The APK does not declare INTERNET or storage permissions.
 
 ## Install
-1. Download `Form-Strength-1.0.0.apk` on your Android phone.
+1. Download `Form-Strength-1.1.0.apk` on your Android phone.
 2. Open it in Files or Downloads. If Android asks, allow that downloader/file manager to install this app, then select Install.
 3. Open **Form & Strength** from the launcher. No browser installation or account is required.
 
@@ -12,7 +12,11 @@ Android 8.0+ with a current Android System WebView is supported by the build. Th
 ## Features
 - Daily weight, waist, steps, sleep, gym, mobility and food-habit check-ins.
 - Gym A/B/C routines and a gentle mobility routine.
-- Food diary: portions, calories, daily totals, meal grouping, history and edit/delete.
+- Quick meal logging: type “2 rotis and 1 cup dal”, review an editable estimate, then save.
+- Offline lookup for 35 common foods, aliases, fractions and supported portion units.
+- Recent-meal buttons fill your last portion for easy repeat logging.
+- Manual calorie entry remains available; unknown foods cannot be silently omitted.
+- Food diary: daily totals, meal grouping, history and edit/delete.
 - Weight trend, waist summary and seven-day calorie history.
 - Native Android back navigation, safe areas, resize behavior for the keyboard and native confirmations.
 - System document-picker export/import. No broad storage permission.
@@ -49,10 +53,17 @@ Set `ANDROID_PLATFORM_JAR`, `ANDROID_BUILD_TOOLS` and `ECJ_JAR` to their extract
 
 For a signed, update-compatible release also set `APK_KEYSTORE` to the preserved PKCS12 keystore and `APK_KEYSTORE_PASSWORD` securely in your environment. Do not put either the key or its password in this repository. The key alias is `form-strength`. A separate private signing backup accompanies this delivery. Increment the manifest's versionCode/versionName and rebuild before distributing updates. Installing updates with a different key will fail; uninstalling first removes local data.
 
+## Update from 1.0.0
+
+Back up your records, then install 1.1.0 over 1.0.0. The application ID and signing key are unchanged and the version code increases to 2. Do not uninstall first. SQLite tables are unchanged. Source and assumptions for the lookup are documented in FOOD_SOURCES.md.
+
+Run `node tests/meal-estimator.test.cjs` for parser tests. `npm run dev` is a disposable UI preview with a mock native bridge; it never reads the phone database and is not packaged in the APK.
+
 ## Verification completed
 - Native Java compiles against API 36; D8 compiles DEX with minimum API 26.
 - Android packaging, four-byte ZIP alignment and APK v2/v3 signature checks pass.
 - APK manifest confirms no requested permissions and a launcher activity.
 - Native tests check numeric ranges, date validity, canonical fields, fractional calories and full-file backup validation.
-- Bundled JavaScript parses. UI is based on the previously tested mobile layout (360–430 px).
+- Bundled JavaScript parses. Parser tests cover combinations, units, fractions, alias precedence and unknown-food safeguards. Native tests cover estimate metadata and backup roundtrips.
+- UI is based on the previously tested mobile layout (360–430 px). The new meal screen could not be browser-tested because preview access was blocked.
 - No Android device/emulator runtime test was available. Native rendering, keyboard, file-picker and lifecycle behavior still need first-device verification.

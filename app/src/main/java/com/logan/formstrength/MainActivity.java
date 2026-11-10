@@ -46,7 +46,7 @@ public final class MainActivity extends Activity {
                 Uri u=request.getUrl();String path=u.getPath();
                 if(!"https".equals(u.getScheme())||!"appassets.androidplatform.net".equals(u.getHost())||path==null)return blocked();
                 if(path.equals("/"))path="/index.html";
-                if(!path.matches("/(index\\.html|app\\.js|app\\.css|icon-192\\.png|icon-512\\.png)"))return blocked();
+                if(!path.matches("/(index\\.html|app\\.js|food-reference\\.js|meal-estimator\\.js|app\\.css|icon-192\\.png|icon-512\\.png)"))return blocked();
                 try{String type=path.endsWith(".js")?"text/javascript":path.endsWith(".css")?"text/css":path.endsWith(".png")?"image/png":"text/html";
                     HashMap<String,String> headers=new HashMap<>();headers.put("Content-Security-Policy","default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'");headers.put("X-Content-Type-Options","nosniff");
                     return new WebResourceResponse(type,"UTF-8",200,"OK",headers,getAssets().open(path.substring(1)));
