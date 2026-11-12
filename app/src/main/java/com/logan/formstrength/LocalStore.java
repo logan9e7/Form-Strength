@@ -49,9 +49,9 @@ final class LocalStore extends SQLiteOpenHelper {
     static String foodId(JSONObject data){String id=text(data,"id",80,true);require(id.matches("[a-zA-Z0-9-]{1,80}"),"Invalid food entry ID.");return id;}
     static JSONObject log(JSONObject data) throws JSONException {
         JSONObject p=new JSONObject();p.put("day",day(data));
-        String[] keys={"weight","waist","steps","sleep"};double[] mins={30,40,0,0},maxes={250,200,100000,24};
+        String[] keys={"weight","waist","steps","sleep","waterMl"};double[] mins={30,40,0,0,0},maxes={250,200,100000,24,20000};
         for(int i=0;i<keys.length;i++){String k=keys[i];if(data.has(k)&&!data.isNull(k)&&!"".equals(data.optString(k)))p.put(k,number(data,k,mins[i],maxes[i]));}
-        String[] checks={"workout","posture","walk","protein","vegetables"};
+        String[] checks={"workout","posture","walk","protein","vegetables","sugarFree","proteinShake"};
         for(String k:checks)p.put(k,Boolean.TRUE.equals(data.opt(k)));
         String session=text(data,"session",1,false);if(!session.matches("[ABC]"))session="A";
         p.put("session",session);p.put("notes",text(data,"notes",1500,false));return p;

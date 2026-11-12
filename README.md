@@ -11,6 +11,8 @@ Android 8.0+ with a current Android System WebView is supported by the build. Th
 
 ## Features
 - Daily weight, waist, steps, sleep, gym, mobility and food-habit check-ins.
+- No-added-sugar and protein-shake day tracking, plus daily water in ml with +250/+500 ml buttons.
+- Seven-day completed-day counts and average water across days with a recorded water total.
 - Gym A/B/C routines and a gentle mobility routine.
 - Quick meal logging: type “2 rotis and 1 cup dal”, review an editable estimate, then save.
 - Offline lookup for 35 common foods, aliases, fractions and supported portion units.
@@ -67,3 +69,8 @@ Run `node tests/meal-estimator.test.cjs` for parser tests. `npm run dev` is a di
 - Bundled JavaScript parses. Parser tests cover combinations, units, fractions, alias precedence and unknown-food safeguards. Native tests cover estimate metadata and backup roundtrips.
 - UI is based on the previously tested mobile layout (360–430 px). The new meal screen could not be browser-tested because preview access was blocked.
 - No Android device/emulator runtime test was available. Native rendering, keyboard, file-picker and lifecycle behavior still need first-device verification.
+
+## Source update — daily trackers (2026-11-12)
+The daily tracker additions are source changes after APK 1.1.0; they are not included in the existing APK. Native validation and backup import/export preserve `sugarFree`, `proteinShake`, and optional `waterMl`. Existing records need no schema migration; missing water stays unlogged. Shake tracking does not automatically add calories: log the shake in the food diary with its actual portion.
+
+Validation for this update: meal-parser tests and JavaScript syntax checks pass. Browser verification was attempted but Chromium could not launch because socket creation is blocked in the environment. Native validation tests were extended but not run here; Android SDK/compiler dependencies and device testing are still required before a new signed release.
