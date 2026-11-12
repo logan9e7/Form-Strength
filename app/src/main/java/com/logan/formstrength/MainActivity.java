@@ -46,7 +46,7 @@ public final class MainActivity extends Activity {
                 Uri u=request.getUrl();String path=u.getPath();
                 if(!"https".equals(u.getScheme())||!"appassets.androidplatform.net".equals(u.getHost())||path==null)return blocked();
                 if(path.equals("/"))path="/index.html";
-                if(!path.matches("/(index\\.html|app\\.js|food-reference\\.js|meal-estimator\\.js|app\\.css|icon-192\\.png|icon-512\\.png)"))return blocked();
+                if(!path.matches("/(index\\.html|app\\.js|training\\.js|food-diary\\.js|progress\\.js|tracker-core\\.js|profile\\.js|habits\\.js|saved-foods\\.js|startup\\.js|food-reference\\.js|meal-estimator\\.js|app\\.css|icon-192\\.png|icon-512\\.png)"))return blocked();
                 try{String type=path.endsWith(".js")?"text/javascript":path.endsWith(".css")?"text/css":path.endsWith(".png")?"image/png":"text/html";
                     HashMap<String,String> headers=new HashMap<>();headers.put("Content-Security-Policy","default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'");headers.put("X-Content-Type-Options","nosniff");
                     return new WebResourceResponse(type,"UTF-8",200,"OK",headers,getAssets().open(path.substring(1)));
@@ -76,8 +76,9 @@ public final class MainActivity extends Activity {
         Uri uri=data.getData();if(requestCode==EXPORT){try{if(exportData==null)throw new IllegalStateException("Reopen export after an app restart.");try(OutputStream out=getContentResolver().openOutputStream(uri,"wt")){if(out==null)throw new IllegalStateException();out.write(exportData.getBytes(StandardCharsets.UTF_8));}event("Backup saved. Keep this file somewhere safe.",false);}catch(Exception e){event("Could not save backup. Please try another location.",false);}finally{exportData=null;}return;}
         try{String raw;try(InputStream in=getContentResolver().openInputStream(uri);ByteArrayOutputStream out=new ByteArrayOutputStream()){if(in==null)throw new IllegalArgumentException("Cannot open this file.");byte[] bytes=new byte[8192];int n;while((n=in.read(bytes))!=-1){if(out.size()+n>5*1024*1024)throw new IllegalArgumentException("Maximum backup size is 5 MB.");out.write(bytes,0,n);}raw=out.toString("UTF-8");}
             final JSONObject backup=LocalStore.validateBackup(raw);int logs=backup.getJSONArray("logs").length(),foods=backup.getJSONArray("foodEntries").length();
-            new AlertDialog.Builder(this).setTitle("Import backup?").setMessage(logs+" check-ins and "+foods+" food entries found. New records will be added. Existing dates and food IDs will be kept unchanged.").setPositiveButton("Import",(d,w)->{try{event(store.importBackup(backup),true);}catch(Exception e){event("Import failed. No records were changed.",false);}}).setNegativeButton("Cancel",null).show();
+            new AlertDialog.Builder(this).setTitle("Import backup?").setMessage(logs+" check-ins and "+foods+" food entries found. New records and saved foods will be added. Existing records and a completed profile will be kept.").setPositiveButton("Import",(d,w)->{try{event(store.importBackup(backup),true);}catch(Exception e){event("Import failed. No records were changed.",false);}}).setNegativeButton("Cancel",null).show();
         }catch(Exception e){event(e instanceof IllegalArgumentException?e.getMessage():"This is not a valid Form & Strength backup.",false);}
     }
+    @Override protected void onResume(){super.onResume();if(web!=null)web.evaluateJavascript("window.onNativeResume && window.onNativeResume()",null);}
     @Override protected void onDestroy(){if(web!=null){web.removeJavascriptInterface("AndroidStore");web.destroy();}if(store!=null)store.close();super.onDestroy();}
 }

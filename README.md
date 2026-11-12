@@ -1,76 +1,53 @@
-# Form & Strength — offline Android app
+# Form & Strength — offline Android companion
 
-An installable Android application with bundled UI and native SQLite storage. No login, backend, analytics, runtime network access, Neon or Render. The APK does not declare INTERNET or storage permissions.
+**1.3.0 · version code 4**. Daily food, protein, water, habits and strength routines in an offline Android app. Bundled web UI inside an Android WebView; native SQLite stores all records. No account, analytics, server, ads, runtime network access or requested permissions.
 
-## Install
-1. Download `Form-Strength-1.1.0.apk` on your Android phone.
-2. Open it in Files or Downloads. If Android asks, allow that downloader/file manager to install this app, then select Install.
-3. Open **Form & Strength** from the launcher. No browser installation or account is required.
+## Install as an update
 
-Android 8.0+ with a current Android System WebView is supported by the build. This build is intended for the user's Pixel 8. It has been compiled and signature-verified but has not been installed on a physical device or emulator in this environment.
+1. In the current app, use Profile → Backup & restore → Back up to a file. In older versions the backup button is directly in Profile.
+2. Download and open `Form-Strength-1.3.0.apk` on your Android phone. Tap **Update**, without uninstalling.
+3. Open Profile to set your own starting measurements and optional goals. All fields are optional. Existing check-ins and meals remain intact.
 
-## Features
-- Daily weight, waist, steps, sleep, gym, mobility and food-habit check-ins.
-- No-added-sugar and protein-shake day tracking, plus daily water in ml with +250/+500 ml buttons.
-- Seven-day completed-day counts and average water across days with a recorded water total.
-- Gym A/B/C routines and a gentle mobility routine.
-- Quick meal logging: type “2 rotis and 1 cup dal”, review an editable estimate, then save.
-- Offline lookup for 35 common foods, aliases, fractions and supported portion units.
-- Recent-meal buttons fill your last portion for easy repeat logging.
-- Manual calorie entry remains available; unknown foods cannot be silently omitted.
-- Food diary: daily totals, meal grouping, history and edit/delete.
-- Weight trend, waist summary and seven-day calorie history.
-- Native Android back navigation, safe areas, resize behavior for the keyboard and native confirmations.
-- System document-picker export/import. No broad storage permission.
+Application ID `com.logan.formstrength` and the original signing key are unchanged. Android 8.0+ with a current System WebView is supported by the build. Device installation and native runtime behavior remain unverified; see `ANDROID_TEST_REPORT.md`.
 
-## Where records live
-`form_strength.db` is stored in the app's private internal storage. Other apps cannot directly read it on a normal, non-rooted phone. Records persist across closing/reopening the app and across compatible signed updates. They are removed when you uninstall or clear app storage. Automatic Android app backup is disabled. Use Profile → **Back up to a file** before changing phones or uninstalling. The exported JSON is a readable backup; choose a location you trust. A chosen cloud document provider may upload that exported file at your discretion.
+## Daily flow
 
-## Move records from the web app
-1. In the existing website, open Profile → Export all my records (or Progress → Export).
-2. Download its JSON export to the phone.
-3. In the APK, open Profile → Import a backup / web-app export.
-4. Choose the JSON file and confirm the import summary.
+- **Today:** calories and protein logged, +250/+500 ml water, and direct toggles for no added sugar, protein shake, gym and mobility. Water and habit actions preserve other check-in fields. Tap again to undo a habit; edit the water total to correct it.
+- **Food → Diary:** type foods and portions, review editable calories/protein, and save. Examples: `150g rice + 2 eggs`, `2 rotis and 1 cup dal`. 50 reference foods with Indian-food aliases and supported gram/ml/cup portions. Unsupported ingredients block saving rather than disappear.
+- **Food → My foods:** create, edit, favourite, filter, log and remove saved portions. Enter a shake's actual product-label values once. Change servings when logging it. Save any reviewed meal as a repeatable portion. Exact saved names or `1.5 servings Demo whey shake` work in typed entry. Removing a saved food does not delete diary records.
+- **Progress:** 14-day habit calendar, editable dates, weight chart, weekly calorie history, seven-day habit/water summary and check-in history.
+- **Profile:** editable name, height, starting weight/waist, weight goal, optional water/protein goals, backup/import and privacy guidance. No hardcoded personal measurements. The app does not prescribe calorie targets.
 
-Import validates the whole file first. New entries are added in one SQLite transaction. Existing check-in dates and food IDs are preserved unchanged; repeated imports do not duplicate them. Import never executes file contents. Profile baseline is the personalized baseline of this build, not imported account settings.
+A shake habit checkmark does not add calories; log the shake in Food. “Sugar-free” tracks **no added sugar**, not naturally occurring sugar in fruit or plain milk. Unknown protein stays absent and daily totals show when coverage is partial. A blank day does not mean zero intake. Calories and protein vary with recipes and portions.
+
+## Storage and backups
+
+`form_strength.db` lives in app-private internal storage. Updates with the same signing key preserve it. Uninstalling or clearing storage deletes records. Automatic Android backup is disabled; export a JSON backup before changing phones.
+
+Schema version 2 adds `preferences` and `saved_foods` using non-destructive `CREATE TABLE IF NOT EXISTS`; existing tables/payloads stay intact. Format-2 backups include profile, saved foods, check-ins and food entries. Older exports remain accepted. Full-file validation precedes a single import transaction. Existing check-in dates, food IDs, saved-food IDs and a completed profile are retained. New saved foods merge; a missing/uncompleted profile can be restored. Exported JSON is readable, so choose a trusted destination. Older app versions may discard new fields when importing/re-exporting newer backups.
 
 ## Source layout
-- `app/src/main/java/com/logan/formstrength/MainActivity.java`: Android WebView shell, strict bundled-resource routing, native document picker, back navigation.
-- `LocalStore.java`: SQLite schema, CRUD, field validation and transactional import.
-- `app/src/main/assets/`: bundled markup, styles, JS and icons. The JS calls the native bridge; it does not call a server.
-- `tests/ValidationTest.java`: runnable JVM tests for native validation/import parsing.
-- `scripts/build.sh`: reproducible SDK-tools build (Java → DEX → aligned/signed APK).
 
-This repository contains the offline Android edition. The earlier web app remains separate. The UI includes the personalized starting profile; no saved check-ins, food-diary records, database files or signing secrets are included in the repository.
+- `MainActivity.java`: resource allowlist, native bridge, system document picker, keyboard insets and Back handling.
+- `LocalStore.java`: SQLite, profile/food validation, serialized quick updates and transactional imports.
+- `app.js`: application state, navigation, check-in forms, loading and export.
+- `food-diary.js`, `saved-foods.js`, `meal-estimator.js`, `food-reference.js`: food diary, library and reference parsing.
+- `profile.js`, `habits.js`, `training.js`, `progress.js`, `startup.js`: focused screen controllers.
+- `tracker-core.js`: pure nutrient/goal calculations used by tests.
+- `tests/`: parser, nutrition, native canonicalization and backup-validation tests.
 
-## Build
-Dependencies: Java 21 runtime, Eclipse ECJ 3.40.0 compiler JAR, Android platform API 36, Android Build Tools 36.0.0, Python 3. No Gradle dependencies.
+## Build and checks
 
-Official artifact URLs:
+Dependencies: Java 21, ECJ 3.40.0, Android API 36 platform, Build Tools 36.0.0, Python 3; no Gradle dependencies. Targets API 35, minimum API 26.
+
+Official downloads:
 - https://dl.google.com/android/repository/platform-36_r02.zip
 - https://dl.google.com/android/repository/build-tools_r36_linux.zip
 - https://repo.maven.apache.org/maven2/org/eclipse/jdt/ecj/3.40.0/ecj-3.40.0.jar
+- Native JVM validation also uses https://repo.maven.apache.org/maven2/org/json/json/20240303/json-20240303.jar
 
-Set `ANDROID_PLATFORM_JAR`, `ANDROID_BUILD_TOOLS` and `ECJ_JAR` to their extracted local paths, then run `bash scripts/build.sh`.
+Set `ANDROID_PLATFORM_JAR`, `ANDROID_BUILD_TOOLS`, `ECJ_JAR`. For the installable release also set `APK_KEYSTORE` and `APK_KEYSTORE_PASSWORD` securely; alias `form-strength`. Run `bash scripts/build.sh`. Never commit signing keys or passwords. Increment manifest version code/name and build output filename for each distributed release.
 
-For a signed, update-compatible release also set `APK_KEYSTORE` to the preserved PKCS12 keystore and `APK_KEYSTORE_PASSWORD` securely in your environment. Do not put either the key or its password in this repository. The key alias is `form-strength`. A separate private signing backup accompanies this delivery. Increment the manifest's versionCode/versionName and rebuild before distributing updates. Installing updates with a different key will fail; uninstalling first removes local data.
+Run `npm test` for parser/nutrition tests. Set `JSON_JAR`, `ANDROID_PLATFORM_JAR`, `ECJ_JAR` and run `bash scripts/test-native.sh` for JVM validation tests. These do not execute the Android SQLite engine or system UI.
 
-## Update from 1.0.0
-
-Back up your records, then install 1.1.0 over 1.0.0. The application ID and signing key are unchanged and the version code increases to 2. Do not uninstall first. SQLite tables are unchanged. Source and assumptions for the lookup are documented in FOOD_SOURCES.md.
-
-Run `node tests/meal-estimator.test.cjs` for parser tests. `npm run dev` is a disposable UI preview with a mock native bridge; it never reads the phone database and is not packaged in the APK.
-
-## Verification completed
-- Native Java compiles against API 36; D8 compiles DEX with minimum API 26.
-- Android packaging, four-byte ZIP alignment and APK v2/v3 signature checks pass.
-- APK manifest confirms no requested permissions and a launcher activity.
-- Native tests check numeric ranges, date validity, canonical fields, fractional calories and full-file backup validation.
-- Bundled JavaScript parses. Parser tests cover combinations, units, fractions, alias precedence and unknown-food safeguards. Native tests cover estimate metadata and backup roundtrips.
-- UI is based on the previously tested mobile layout (360–430 px). The new meal screen could not be browser-tested because preview access was blocked.
-- No Android device/emulator runtime test was available. Native rendering, keyboard, file-picker and lifecycle behavior still need first-device verification.
-
-## Source update — daily trackers (2026-11-12)
-The daily tracker additions are source changes after APK 1.1.0; they are not included in the existing APK. Native validation and backup import/export preserve `sugarFree`, `proteinShake`, and optional `waterMl`. Existing records need no schema migration; missing water stays unlogged. Shake tracking does not automatically add calories: log the shake in the food diary with its actual portion.
-
-Validation for this update: meal-parser tests and JavaScript syntax checks pass. Browser verification was attempted but Chromium could not launch because socket creation is blocked in the environment. Native validation tests were extended but not run here; Android SDK/compiler dependencies and device testing are still required before a new signed release.
+`npm run dev` starts a disposable browser preview. Its mock bridge stores demonstration records in browser localStorage, separately from the phone's database. It is not packaged in the APK. `/__phone?width=390` wraps the UI at a mobile width. Native import and Back/lifecycle tests require Android.

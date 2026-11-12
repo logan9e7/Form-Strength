@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict');const core=require('../app/src/main/assets/tracker-core.js'),parser=require('../app/src/main/assets/meal-estimator.js');
+const totals=core.nutrients([{calories:120,servings:1.5,proteinG:24},{calories:80,servings:2},{calories:0,servings:1,proteinG:0}]);assert.equal(totals.calories,340);assert.equal(totals.protein,36);assert.equal(totals.unknown,1);assert.equal(totals.known,2);assert.equal(core.nutrients([]).known,0);
+assert.equal(core.goal(79,77,75),50);assert.equal(core.goal(60,65,70),50);assert.equal(core.goal(79,74,75),100);assert.equal(core.goal(undefined,77,75),null);assert.equal(core.goal(75,75,75),null);
+let meal=parser.estimate('150g rice + 2 eggs');assert(meal.ready);assert.equal(meal.proteinG,16.6);
+meal=parser.estimate('2 rotis and 1 cup dal');assert(meal.ready);assert.equal(meal.proteinG,null,'unknown recipe protein must not become zero');
+meal=parser.estimate('2 eggs + 1 cup dal');assert.equal(meal.proteinG,null);assert(meal.knownProteinG>12);
+for(const f of parser.foods){for(const p of Object.values(f.proteinUnits||{}))assert(p>=0&&Number.isFinite(p),f.name);assert(parser.estimate(f.defaultQty+' '+f.defaultUnit+' '+f.aliases[0]).ready,f.name)}
+const food={id:'shake-1',name:'Demo whey shake',portion:'1 scoop',calories:120,proteinG:24,servings:1};parser.indexFoods([core.savedReference(food),core.savedReference({...food,id:'meal-1',name:'My rice + egg bowl'})]);meal=parser.estimate('1.5 servings Demo whey shake');assert(meal.ready);assert.equal(meal.total,180);assert.equal(meal.proteinG,36);assert(parser.estimate('My rice + egg bowl').ready,'saved recipe names with separators work');
+parser.indexFoods([core.savedReference(food),core.savedReference({...food,id:'shake-2',calories:200})]);assert(!parser.estimate('2 servings Demo whey shake').ready,'ambiguous saved names require a choice');
+parser.indexFoods([]);assert(!parser.estimate('Demo whey shake').ready);assert(!parser.estimate('2 eggs plus ketchup').ready);console.log('Passed nutrition totals, unknown protein, goal direction, all reference foods, saved portions and custom recipe names.');

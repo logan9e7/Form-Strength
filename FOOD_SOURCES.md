@@ -25,3 +25,11 @@ These are reference portions, not lab analysis of the user's meal. The app does 
 Quick entry saves one aggregate meal record with its entered description, reviewed total, `estimated: true`, explanatory basis and initial component breakdown. A corrected total may differ from the initial breakdown. Both are retained so the original reference basis is distinguishable from the user's review. Manual entry remains available. Repeating a saved estimate retains its estimate provenance.
 
 The SQLite schema is unchanged. Version 1.1.0 remains compatible with 1.0.0 records and backups. Older app versions may omit estimate metadata if they import and re-export a newer backup.
+
+## 1.3.0 additions
+
+50 foods are now bundled. Selected protein values (nutrient **1003**, grams per 100 g) were extracted from the same official USDA SR Legacy CSV archive. For existing USDA serving references, protein uses the same portion mass implied by the recorded energy and USDA kcal/100 g. New references use explicit gram portions: Greek yogurt, boiled lentils, peanut butter, firm tofu, boiled chickpeas, dry oats, boiled mung beans, boiled red kidney beans, dates, cucumber, orange, boiled broccoli, walnuts, raw tomato and cooked Atlantic salmon. Every record retains its exact FDC ID.
+
+32 references have sourced protein. No protein value was invented for the 18 prepared-food recipes whose energy-only reference does not supply it. Such meals may have calories while protein remains unknown. Mixed meals with any unknown component leave the meal protein blank unless the user supplies a reviewed total. Daily totals label incomplete protein coverage. Zero is a valid explicit known value; blank is not converted to zero.
+
+Custom foods use the user's label/source and portion. A saved portion can be repeated or typed; calories and protein scale together with servings. Saving/editing a reference estimate retains its estimated status. Generic protein-shake nutrition is deliberately not assumed: products, scoop sizes and added milk differ.

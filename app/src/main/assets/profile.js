@@ -1,0 +1,7 @@
+'use strict';
+const profileFields={name:'profileName',height:'profileHeight',startingWeight:'profileWeight',startingWaist:'profileWaist',goalWeight:'profileGoal',waterGoalMl:'profileWater',proteinGoalG:'profileProtein'};
+function openProfile(){if(!profileLoaded){notify('Profile is still loading. Use Retry if needed.');return}for(const[k,id]of Object.entries(profileFields))$(id).value=profile[k]??'';profileDirty=false;showMessage('profileMessage','');openDialog('profileDialog')}
+function renderProfileSummary(){const name=profile.name||'';$('openProfile').textContent=name?name[0].toUpperCase():'F';$('homeGreeting').textContent=name?'Your day, '+name+'.':'Make today count.';$('setupBanner').hidden=!profileLoaded||profile.completed===true;}
+$('startSetup').onclick=openProfile;
+$('profileForm').addEventListener('input',()=>profileDirty=true);
+$('profileForm').onsubmit=async e=>{e.preventDefault();if(profileBusy||!profileLoaded)return;const d={completed:true};for(const[k,id]of Object.entries(profileFields)){const value=$(id).value.trim();if(k==='name')d[k]=value;else if(value!=='')d[k]=Number(value)}profileBusy=true;$('saveProfile').disabled=true;try{profile=(await request('/api/profile','PUT',d)).profile;profileDirty=false;render();closeDialog('profileDialog',true);notify('Your setup is saved.')}catch(err){showMessage('profileMessage',err.message,true)}finally{profileBusy=false;$('saveProfile').disabled=false}};

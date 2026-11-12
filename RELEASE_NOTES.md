@@ -1,10 +1,12 @@
-# 1.1.0 — simpler meal logging
+# 1.3.0 — a faster daily companion
 
-- Type a meal description and review an editable offline calorie estimate.
-- 35 selected common-food references, including Indian prepared foods, with aliases, fractional servings, cups, bowls and supported gram/ml portions.
-- Show recognized foods, assumed portions and source basis; block saving when part of the input is unresolved.
-- One-tap recent-meal fill for repeat logging, with manual calorie entry still available.
-- Preserve estimate provenance in records and backups. No SQLite schema change or new permissions.
-- Android version code 2; same package and signing key as 1.0.0. Install over the current app, without uninstalling. Back up first.
+- Rebuilt Today around food/protein, direct water additions and four one-tap habits.
+- Added personal setup; removed the previous user's hardcoded measurements and identity.
+- Added optional per-serving protein, scaled totals, partial-coverage labels and 50 reference foods (32 include sourced protein).
+- Added My foods: product-label/custom portions, favourites, search, repeat logging, edit/remove, and typed saved-food references.
+- Added a 14-day habit calendar, accessible date labels and editable check-ins.
+- Improved touch controls, sheet/form layout, responsive cards, empty states, contrast, focus styling and safe-area spacing. Split screen controllers into focused files.
+- Schema 2 adds profile and saved-food tables without removing old data. Backup format 2 includes them; legacy backups remain supported.
+- Android version code 4; same package/signing key. Back up and install over 1.0–1.2; do not uninstall.
 
-Validation: parser test suite, native validation and backup metadata tests, Java/DEX compilation, ZIP alignment, manifest and v2/v3 APK signatures pass. The new meal UI was not browser-verified because preview access was blocked; physical Android testing remains unverified.
+Validation and remaining physical-device gates: `ANDROID_TEST_REPORT.md`. UI/UX findings and competition scope: `UI_UX_AUDIT.md`.
