@@ -1,14 +1,24 @@
 # Form & Strength — offline Android companion
 
-**1.3.0 · version code 4**. Daily food, protein, water, habits and strength routines in an offline Android app. Bundled web UI inside an Android WebView; native SQLite stores all records. No account, analytics, server, ads, runtime network access or requested permissions.
+**1.4.0 · version code 5**. Daily food, protein, water, habits and strength routines in an offline Android app. Bundled web UI inside an Android WebView; native SQLite stores all records. No app account, analytics or ads. Core logging works offline. Optional Gemini uses native HTTPS only after the user approves a meal; optional Health Connect reads supported device data.
 
 ## Install as an update
 
 1. In the current app, use Profile → Backup & restore → Back up to a file. In older versions the backup button is directly in Profile.
-2. Download and open `Form-Strength-1.3.0.apk` on your Android phone. Tap **Update**, without uninstalling.
+2. Download and open `Form-Strength-1.4.0.apk` on your Android phone. Tap **Update**, without uninstalling.
 3. Open Profile to set your own starting measurements and optional goals. All fields are optional. Existing check-ins and meals remain intact.
 
 Application ID `com.logan.formstrength` and the original signing key are unchanged. Android 8.0+ with a current System WebView is supported by the build. Device installation and native runtime behavior remain unverified; see `ANDROID_TEST_REPORT.md`.
+
+## New in 1.4
+
+- New Momentum theme and geometric/adaptive logo.
+- Type `30 min walking + 45 min weights` to estimate activity burn using reviewed MET/duration/body-weight assumptions. Active and gross calories are distinct. Edit/delete records and select activity dates in Move → Activity.
+- Food → Type a meal → Ask Gemini offers optional personal Google AI Studio key setup in an Android dialog. Review the AI estimate before saving. No key is included in this repository/APK. Live requests require configuring your own project/key.
+- Move → Device offers read-only Android 14+ Health Connect integration. Band companion-app sharing and permissions are required. No direct legacy Google Fit or universal Bluetooth-band connection is claimed.
+- Manual calories and device readings stay separate; keys and transient device health readings are excluded from backup exports.
+
+See `CONNECTIONS.md` for setup, privacy and production gates; `ACTIVITY_SOURCES.md` for reference codes/calorie semantics. Live AI and band operations remain unverified without a key/device.
 
 ## Daily flow
 
@@ -24,7 +34,7 @@ A shake habit checkmark does not add calories; log the shake in Food. “Sugar-f
 
 `form_strength.db` lives in app-private internal storage. Updates with the same signing key preserve it. Uninstalling or clearing storage deletes records. Automatic Android backup is disabled; export a JSON backup before changing phones.
 
-Schema version 2 adds `preferences` and `saved_foods` using non-destructive `CREATE TABLE IF NOT EXISTS`; existing tables/payloads stay intact. Format-2 backups include profile, saved foods, check-ins and food entries. Older exports remain accepted. Full-file validation precedes a single import transaction. Existing check-in dates, food IDs, saved-food IDs and a completed profile are retained. New saved foods merge; a missing/uncompleted profile can be restored. Exported JSON is readable, so choose a trusted destination. Older app versions may discard new fields when importing/re-exporting newer backups.
+Schema version 3 adds activity records alongside the schema-2 `preferences` and `saved_foods` using non-destructive `CREATE TABLE IF NOT EXISTS`; existing tables/payloads stay intact. Format-3 backups include profile, saved foods, check-ins, food entries and activities. Older exports remain accepted. Full-file validation precedes a single import transaction. Existing check-in dates, food IDs, saved-food IDs and a completed profile are retained. New saved foods merge; a missing/uncompleted profile can be restored. Exported JSON is readable, so choose a trusted destination. Older app versions may discard new fields when importing/re-exporting newer backups.
 
 ## Source layout
 
@@ -34,7 +44,9 @@ Schema version 2 adds `preferences` and `saved_foods` using non-destructive `CRE
 - `food-diary.js`, `saved-foods.js`, `meal-estimator.js`, `food-reference.js`: food diary, library and reference parsing.
 - `profile.js`, `habits.js`, `training.js`, `progress.js`, `startup.js`: focused screen controllers.
 - `tracker-core.js`: pure nutrient/goal calculations used by tests.
-- `tests/`: parser, nutrition, native canonicalization and backup-validation tests.
+- `activities.js`, `activity-estimator.js`: movement entry and sourced MET calculations.
+- `connections.js`, `GeminiMealClient.java`, `HealthConnection.java`: optional native integrations.
+- `tests/`: parser, activity/nutrition calculations, native canonicalization and backup-validation tests.
 
 ## Build and checks
 

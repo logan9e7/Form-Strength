@@ -42,6 +42,17 @@ public class ValidationTest {
   rejects(()->LocalStore.patchLog(new JSONObject().put("waterMl",20000),new JSONObject().put("day","2026-11-12").put("waterDelta",250)),"water overflow rejected");
   final JSONObject logForPatch=log;
   rejects(()->LocalStore.patchLog(logForPatch,new JSONObject().put("day","2026-11-12").put("toggle","notes")),"invalid habit rejected");
+  JSONObject activity=LocalStore.activity(new JSONObject().put("id","walk-1").put("day","2026-11-13").put("name","Walking").put("minutes",30).put("met",3.8).put("weightKg",79).put("activeCalories",9999));
+  check(activity.getLong("activeCalories")==116&&activity.getLong("grossCalories")==158,"recompute activity burn instead of trusting submitted calories");
+  rejects(()->LocalStore.activity(new JSONObject(activity.toString()).put("minutes",0)),"zero activity minutes");
+  rejects(()->LocalStore.activity(new JSONObject(activity.toString()).put("met",99)),"invalid MET");
+  JSONObject activityBackup=LocalStore.validateBackup(new JSONObject().put("logs",new org.json.JSONArray()).put("foodEntries",new org.json.JSONArray()).put("activityEntries",new org.json.JSONArray().put(activity)).toString());check(activityBackup.getJSONArray("activityEntries").length()==1,"activity backup roundtrip");
+  JSONObject ai=GeminiMealClient.validate(new JSONObject().put("recognized",true).put("calories",600).put("proteinG",25).put("assumptions","One plate, moderate oil"));check(ai.getDouble("calories")==600,"AI schema canonicalized");
+  rejects(()->GeminiMealClient.validate(new JSONObject().put("recognized",true).put("calories",-5)),"negative AI estimate");
+  rejects(()->GeminiMealClient.validate(new JSONObject().put("recognized","true").put("calories",500)),"AI boolean must be boolean");
+  check(!GeminiMealClient.validate(new JSONObject().put("recognized",false).put("message","What portion?")).has("calories"),"unrecognized AI has no numeric estimate");
+  check(HealthConnection.toKilocalories(123000)==123,"Health Connect platform calories convert to kcal");
+  JSONObject aiFood=LocalStore.food(new JSONObject(rich.toString()).put("estimated",true).put("aiEstimated",true).put("aiModel","gemini-3.5-flash-lite").put("aiAssumptions","Label-sized portion"));check(aiFood.getBoolean("aiEstimated"),"AI provenance retained");
   System.out.println("Passed native validation: canonical fields, dates, ranges, fractions and backup validation.");
  }
 }

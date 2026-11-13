@@ -3,6 +3,6 @@
   "private": true,
   "scripts": {
     "dev": "node scripts/preview-meals.mjs",
-    "test": "node tests/meal-estimator.test.cjs && node tests/tracker-core.test.cjs"
+    "test": "node tests/meal-estimator.test.cjs && node tests/tracker-core.test.cjs && node tests/activity-estimator.test.cjs"
   }
 }

@@ -8,19 +8,20 @@ const fmtDate=(day,options={month:'short',day:'numeric'})=>new Date(day+'T12:00:
 const validDay=d=>/^\d{4}-\d{2}-\d{2}$/.test(d)&&!Number.isNaN(Date.parse(d))&&new Date(d).toISOString().slice(0,10)===d;
 const rounded=n=>Math.round(n).toLocaleString();
 let logs=[],foodEntries=[],logsLoaded=false,foodLoaded=false,selectedSession='A',logDirty=false,foodDirty=false,logBusy=false,foodBusy=false,deleteBusy=false,foodDeleteBusy=false,toastTimer;
+let activityEntries=[],activitiesLoaded=false;
 let profile={},savedFoods=[],profileLoaded=false,savedFoodsLoaded=false,profileDirty=false,savedFoodDirty=false,profileBusy=false,savedFoodBusy=false,quickBusy=false;
 const fields=['weight','waist','steps','sleep','notes','session','waterMl'],checks=['workout','posture','walk','protein','vegetables','sugarFree','proteinShake'];
 function notify(text){$('toast').textContent=text;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,3500)}
 function showMessage(id,text,error=false){$(id).textContent=text;$(id).style.color=error?'#9b4032':''}
-function showScreen(name){name=tabs.includes(name)?name:'today';tabs.forEach(t=>$(t).hidden=t!==name);document.querySelectorAll('[data-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.tab===name);b.dataset.tab===name?b.setAttribute('aria-current','page'):b.removeAttribute('aria-current')});document.title=(name==='food'?'Food':name[0].toUpperCase()+name.slice(1))+' · Form & Strength';window.scrollTo({top:0,behavior:'instant'})}
+function showScreen(name){name=tabs.includes(name)?name:'today';tabs.forEach(t=>$(t).hidden=t!==name);document.querySelectorAll('[data-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.tab===name);b.dataset.tab===name?b.setAttribute('aria-current','page'):b.removeAttribute('aria-current')});document.title=(name==='food'?'Food':name==='train'?'Move':name[0].toUpperCase()+name.slice(1))+' · Form & Strength';window.scrollTo({top:0,behavior:'instant'})}
 function navigate(name){if(location.hash!=='#'+name)location.hash=name;else showScreen(name)}
 window.addEventListener('hashchange',()=>showScreen(location.hash.slice(1)));document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>navigate(b.dataset.tab));showScreen(location.hash.slice(1));
 function openDialog(id){if(!$(id).open){$(id).showModal();document.body.style.overflow='hidden'}}
-function isDirty(id){return id==='checkinDialog'?logDirty:id==='foodDialog'?foodDirty:id==='profileDialog'?profileDirty:id==='savedFoodDialog'?savedFoodDirty:false}
-function isBusy(id){return id==='checkinDialog'?logBusy||deleteBusy:id==='foodDialog'?foodBusy:id==='profileDialog'?profileBusy:id==='savedFoodDialog'?savedFoodBusy:false}
-function closeDialog(id,force=false){if(isBusy(id)&&!force)return;if(!force&&isDirty(id)&&!confirm('Discard the changes in this form?'))return;$(id).close();if(id==='checkinDialog')logDirty=false;if(id==='foodDialog')foodDirty=false;if(id==='profileDialog')profileDirty=false;if(id==='savedFoodDialog')savedFoodDirty=false;document.body.style.overflow=document.querySelector('dialog[open]')?'hidden':''}
+function isDirty(id){return id==='checkinDialog'?logDirty:id==='foodDialog'?foodDirty:id==='profileDialog'?profileDirty:id==='savedFoodDialog'?savedFoodDirty:id==='activityDialog'?activityDirty:false}
+function isBusy(id){return id==='checkinDialog'?logBusy||deleteBusy:id==='foodDialog'?foodBusy:id==='profileDialog'?profileBusy:id==='savedFoodDialog'?savedFoodBusy:id==='activityDialog'?activityBusy:false}
+function closeDialog(id,force=false){if(isBusy(id)&&!force)return;if(!force&&isDirty(id)&&!confirm('Discard the changes in this form?'))return;$(id).close();if(id==='checkinDialog')logDirty=false;if(id==='foodDialog')foodDirty=false;if(id==='profileDialog')profileDirty=false;if(id==='savedFoodDialog')savedFoodDirty=false;if(id==='activityDialog')activityDirty=false;document.body.style.overflow=document.querySelector('dialog[open]')?'hidden':''}
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeDialog(b.dataset.close));document.querySelectorAll('dialog').forEach(d=>{d.addEventListener('cancel',e=>{e.preventDefault();closeDialog(d.id)});d.addEventListener('click',e=>{if(e.target===d){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)closeDialog(d.id)}})});
-window.addEventListener('beforeunload',e=>{if(logDirty||foodDirty||profileDirty||savedFoodDirty){e.preventDefault();e.returnValue=''}});
+window.addEventListener('beforeunload',e=>{if(logDirty||foodDirty||profileDirty||savedFoodDirty||activityDirty){e.preventDefault();e.returnValue=''}});
 async function request(path,method='GET',data){
  if(!window.AndroidStore)throw Error('Open this tracker using the Android app.');
  const response=JSON.parse(AndroidStore.request(path,method,data?JSON.stringify(data):''));
@@ -29,8 +30,8 @@ async function request(path,method='GET',data){
 function syncButtons(){$('save').disabled=!logsLoaded||logBusy||deleteBusy;$('delete').disabled=!logsLoaded||logBusy||deleteBusy;$('saveFood').disabled=!foodLoaded||foodBusy||(foodMode==='quick'&&!quickEstimate.ready);$('save').textContent=logBusy?'Saving…':'Save check-in';$('saveFood').textContent=foodBusy?'Saving…':$('foodId').value?'Update food':foodMode==='quick'?'Save meal':'Save food';syncQuickButtons()}
 
 async function loadAll(){
- const results=await Promise.allSettled([request('/api/logs'),request('/api/foods'),request('/api/profile'),request('/api/saved-foods')]);const errors=[];
- const labels=['Check-ins','Food diary','Profile','Saved foods'];results.forEach((r,i)=>{if(r.status==='rejected'){errors.push(labels[i]+': '+r.reason.message);return}if(i===0){logs=r.value.logs;logsLoaded=true}if(i===1){foodEntries=r.value.entries;foodLoaded=true}if(i===2){profile=r.value.profile;profileLoaded=true}if(i===3){savedFoods=r.value.foods;savedFoodsLoaded=true}});
+ const results=await Promise.allSettled([request('/api/logs'),request('/api/foods'),request('/api/profile'),request('/api/saved-foods'),request('/api/activities')]);const errors=[];
+ const labels=['Check-ins','Food diary','Profile','Saved foods','Activities'];results.forEach((r,i)=>{if(r.status==='rejected'){errors.push(labels[i]+': '+r.reason.message);return}if(i===0){logs=r.value.logs;logsLoaded=true}if(i===1){foodEntries=r.value.entries;foodLoaded=true}if(i===2){profile=r.value.profile;profileLoaded=true}if(i===3){savedFoods=r.value.foods;savedFoodsLoaded=true}if(i===4){activityEntries=r.value.entries;activitiesLoaded=true}});
  refreshFoodIndex();$('loadError').hidden=!errors.length;$('loadErrorText').textContent=errors.join(' ');render();syncButtons();syncQuickButtons();
 }
 $('retry').onclick=async()=>{$('retry').disabled=true;$('retry').textContent='Loading…';await loadAll();$('retry').disabled=false;$('retry').textContent='Retry loading'};
@@ -51,20 +52,20 @@ function renderHome(){
  const percent=TrackerCore.goal(profile.startingWeight,w,target);$('goalTrack').hidden=percent===null;$('goalFill').style.width=(percent||0)+'%';$('goalTrack').setAttribute('aria-valuenow',Math.round(percent||0));
  $('lastWeight').textContent=last?'Last weigh-in · '+fmtDate(last.day):w!=null?'Your starting measurement':'Log a measurement when you’re ready.';
  const start=new Date(localDay()+'T12:00:00');start.setDate(start.getDate()-((start.getDay()+6)%7));const count=logs.filter(l=>l.workout&&l.day>=localDay(start)&&l.day<=localDay()).length;
- $('weekWorkouts').textContent=count+' '+(count===1?'session':'sessions')+' this week';
+ $('weekWorkouts').textContent='Gym habit · '+count+' '+(count===1?'day':'days')+' this week';
  const totals=TrackerCore.nutrients(foodEntries.filter(e=>e.day===localDay()));$('todayCalories').innerHTML=(foodLoaded?(totals.count?rounded(totals.calories):'—'):'…')+' <span>kcal</span>';
  $('todayProtein').textContent=totals.known?totals.protein+' g protein'+(totals.unknown?' · partial':''):'Protein not logged';
  $('todayFoodCount').textContent=foodLoaded?(totals.count?totals.count+' '+(totals.count===1?'meal entry':'meal entries'):'Your first meal starts here'):'Loading diary…';
- renderProfileSummary();renderDailyActions();
+ renderProfileSummary();renderDailyActions();renderBurnSummary();
 }
-function render(){renderHome();renderFood();renderProgress();renderCalendar();renderSavedFoods()}
+function render(){renderHome();renderFood();renderProgress();renderCalendar();renderSavedFoods();renderActivities()}
 function exportRecords(){
- if(!logsLoaded||!foodLoaded||!profileLoaded||!savedFoodsLoaded){notify('Load all records before exporting. Use Retry if needed.');return}
- const backup={formatVersion:2,exportedAt:new Date().toISOString(),profile,savedFoods,logs,foodEntries};
+ if(!logsLoaded||!foodLoaded||!profileLoaded||!savedFoodsLoaded||!activitiesLoaded){notify('Load all records before exporting. Use Retry if needed.');return}
+ const backup={formatVersion:3,exportedAt:new Date().toISOString(),profile,savedFoods,logs,foodEntries,activityEntries};
  AndroidStore.exportBackup(JSON.stringify(backup,null,2));
 }
 $('export').onclick=$('exportProfile').onclick=exportRecords;
-$('importBackup').onclick=()=>{if(logDirty||foodDirty||profileDirty||savedFoodDirty){notify('Save or discard your open form before importing.');return}AndroidStore.importBackup()};
+$('importBackup').onclick=()=>{if(logDirty||foodDirty||profileDirty||savedFoodDirty||activityDirty){notify('Save or discard your open form before importing.');return}AndroidStore.importBackup()};
 window.onNativeStatus=async event=>{showMessage('exportStatus',event.message);notify(event.message);if(event.reload)await loadAll()};
 window.handleNativeBack=()=>{const dialog=document.querySelector('dialog[open]');if(dialog){closeDialog(dialog.id);return}if(location.hash&&location.hash!=='#today'){navigate('today');return}AndroidStore.exit()};
 $('openProfile').onclick=$('openAbout').onclick=()=>openProfile();

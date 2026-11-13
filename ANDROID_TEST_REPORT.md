@@ -45,3 +45,19 @@ Disposable preview, demonstration data only. Browser bridge uses localStorage an
 | Larger text/font/display settings and TalkBack | No clipped controls; date/status names and reading order usable |
 
 Do not label this release physically tested or Play Store ready solely from compilation, signatures or browser checks. Back up before installation and perform the above gates on the intended phone.
+
+# 1.4.0 — current verification (13 November 2026)
+
+Package unchanged; version code **5**; minimum API 26 for core features, Android 14/API 34+ for the platform Health Connect integration. Original signing identity retained.
+
+- PASS: existing food/nutrition regressions plus activity parsing, aliases, durations, assumptions, active/gross estimates and unknown speed/incline/load rejection.
+- PASS: JVM activity canonicalization recomputes energy instead of trusting submitted calorie values; activity backup validation; Gemini result bounds/boolean validation; AI provenance; Health Connect platform cal → kcal conversion.
+- PASS: Java/DEX/resource compilation and signed APK packaging. The final artifact's bundled files were compared with source and its native resource allowlist; original certificate and version increment checked.
+- PASS: browser manual flow at 390 px — two typed activities → batch save → list/totals → edit existing record; dashboard updates. Offline meal logging and profile save still work. Reload preserved demonstration records through the preview bridge.
+- PASS: 320/430 px review with no horizontal body overflow. New theme, geometric logo, Eaten/Active dashboard, Move sections and source/error labels reviewed.
+- PASS: unknown activity details disable Save. Unconfigured AI shows setup instructions. Browser device controls are unavailable and metrics stay blank; no successful AI/device values are fabricated for preview.
+- Source review: only INTERNET plus three read-only health permissions added; core WebView network loads remain blocked. Gemini native confirmation shows the exact selected text. No bundled key, no Health Connect → AI path, and no device-reading/key fields in exported backup payloads.
+
+**BLOCKED / not claimed:** no API key was supplied; `adb devices` again returned an empty list. Successful Gemini requests, Android Keystore operations, Health Connect permission UI/reads/revocation, band-source compatibility, actual schema-2→3 upgrade, native keyboard/picker/Back behavior and adaptive-launcher rendering have not been exercised on a phone/emulator. These are release gates, not passing tests.
+
+Additional device cases: deny one/two/all health permissions; revoke while a read is in flight; empty data versus a reported zero; only steps/only total burn; interval crossing local midnight/DST; key removal/replacement, quota/auth/model errors and offline Gemini failure; cancelled send confirmation; response arriving after meal text/date changes; backup roundtrip of AI provenance/activity entries. Refer to `CONNECTIONS.md` before public distribution. Use a protected backend/Firebase AI Logic setup for a publisher-managed AI service; do not distribute a shared API key.

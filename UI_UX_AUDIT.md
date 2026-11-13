@@ -36,3 +36,11 @@ This release targets a narrower advantage: private offline use, quick daily acti
 ## Remaining gates
 
 No Android phone/emulator was attached. Keyboard resize, native Back, system document pickers, lifecycle recovery and actual upgrade/database migration still require the device checks in `ANDROID_TEST_REPORT.md`. Browser localStorage persistence is not proof of native SQLite persistence.
+
+# 1.4 — Momentum redesign (13 November 2026)
+
+Current palette replaces forest/lime with navy, electric blue, ice-blue surfaces and warm coral for activity. The new F/motion mark has SVG source, PNG app/header assets and an adaptive native launcher icon. A distinct `theme.css` keeps the visual system separate from the existing layout/controller rules.
+
+Today now compares **Eaten** with **Active · estimate/device** as separate labelled facts, with no net-calorie/deficit claim. Typed activity and band connection actions are directly below. Move uses Activity / Routines / Device sections to avoid one long mixed screen. Activity forms show body-weight, duration, MET and gross/active assumptions; the supported-reference picker is collapsed by default. Food offers a Gemini action without replacing the offline/reference/label paths. Profile connection setup is disclosed only when needed.
+
+Browser review at 320, 390 and 430 px confirmed no horizontal body overflow, visible contrast/source labels and functional activity save/edit/meal/setup paths. Decorative header treatment is removed at the narrowest size to save space. Unavailable native features are disabled in preview, not filled with fake successful data. Current service/device verification gaps are recorded in `ANDROID_TEST_REPORT.md`; no competitive superiority claim is made.
