@@ -76,3 +76,6 @@ Native build/signature/package checks are recorded in the release workflow. No p
 
 ## 1.5.1 Home redesign
 PASS: centered brand geometry and no horizontal overflow at 320/390/430 browser widths; redesigned quick meal/activity buttons open their correct forms. Existing regression suites, JS syntax, unique IDs, signed Android compilation pass. Same signer, version code 7, no schema/permission changes. Physical Android testing remains pending.
+
+## 1.5.2 safe-area correction
+Native inset owner changed: root pads by the union/max of system bars, cutout and IME; handled types are zeroed on the returned WindowInsets.Builder, rather than returning original offsets to WebView. This retains inset dispatch and avoids applying safe-area offsets twice. Phone header reduced 70→58 CSS px and redundant movement spacing removed. Compile/package and browser layout checks cover source behavior only. Actual Pixel cutout, status-bar visibility, landscape, gesture/three-button navigation and keyboard transitions must be verified on-device.

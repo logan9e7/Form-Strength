@@ -1,3 +1,9 @@
+# 1.5.2 — single safe-area owner
+
+- Native shell reserves the maximum status-bar, display-cutout and keyboard insets once; zeroes handled inset types before WebView dispatch to prevent duplicate padding.
+- Compact 58px phone header, tighter date/energy spacing and reduced gap before movement.
+- Same signer, package, data schema and permissions. Physical notch/keyboard/rotation testing remains pending.
+
 # 1.5.1 — centered identity and redesigned Home
 
 - Centered wordmark with balanced logo/profile controls.

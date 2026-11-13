@@ -40,7 +40,20 @@ public final class MainActivity extends Activity {
         FrameLayout root=new FrameLayout(this);root.setBackgroundColor(Color.rgb(244,247,252));
         web=new WebView(this);web.setBackgroundColor(Color.rgb(244,247,252));root.addView(web,new FrameLayout.LayoutParams(-1,-1));setContentView(root);
         getWindow().setStatusBarColor(Color.rgb(244,247,252));getWindow().setNavigationBarColor(Color.rgb(244,247,252));getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
-        if(Build.VERSION.SDK_INT>=30){getWindow().setDecorFitsSystemWindows(false);root.setOnApplyWindowInsetsListener((view,insets)->{android.graphics.Insets bars=insets.getInsets(WindowInsets.Type.systemBars()),ime=insets.getInsets(WindowInsets.Type.ime());view.setPadding(bars.left,bars.top,bars.right,Math.max(bars.bottom,ime.bottom));return insets;});}
+        if(Build.VERSION.SDK_INT>=30){
+            getWindow().setDecorFitsSystemWindows(false);
+            root.setOnApplyWindowInsetsListener((view,insets)->{
+                // The native shell owns safe-area padding. Do not dispatch those offsets
+                // again to WebView: modern WebView otherwise applies a second inset.
+                int handled=WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout()|WindowInsets.Type.ime();
+                android.graphics.Insets safe=insets.getInsets(handled);
+                view.setPadding(safe.left,safe.top,safe.right,safe.bottom);
+                return new WindowInsets.Builder(insets).setInsets(handled,android.graphics.Insets.NONE)
+                    .setInsetsIgnoringVisibility(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout(),android.graphics.Insets.NONE)
+                    .setDisplayCutout(null).build();
+            });
+            root.requestApplyInsets();
+        }
         WebSettings settings=web.getSettings();settings.setJavaScriptEnabled(true);settings.setDomStorageEnabled(true);settings.setAllowFileAccess(false);settings.setAllowContentAccess(false);settings.setAllowFileAccessFromFileURLs(false);settings.setAllowUniversalAccessFromFileURLs(false);settings.setBlockNetworkLoads(true);settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);settings.setJavaScriptCanOpenWindowsAutomatically(false);settings.setSupportMultipleWindows(false);
         WebView.setWebContentsDebuggingEnabled(false);web.addJavascriptInterface(new Bridge(),"AndroidStore");
         web.setWebViewClient(new WebViewClient(){
