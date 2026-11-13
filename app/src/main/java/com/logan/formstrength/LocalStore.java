@@ -13,18 +13,21 @@ import java.util.Locale;
 
 /** App-private SQLite. No network, analytics, accounts or cloud backup. */
 final class LocalStore extends SQLiteOpenHelper {
-    LocalStore(Context context) { super(context, "form_strength.db", null, 3); }
+    LocalStore(Context context) { super(context, "form_strength.db", null, 4); }
     @Override public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE daily_logs (day TEXT PRIMARY KEY NOT NULL, payload TEXT NOT NULL)");
         db.execSQL("CREATE TABLE calorie_entries (id TEXT PRIMARY KEY NOT NULL, day TEXT NOT NULL, payload TEXT NOT NULL)");
         db.execSQL("CREATE INDEX food_day ON calorie_entries(day)");
         createPreferences(db);
         createActivities(db);
+        createHealthCache(db);
     }
     @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         if(oldVersion<2)createPreferences(db);
         if(oldVersion<3)createActivities(db);
+        if(oldVersion<4)createHealthCache(db);
     }
+    private static void createHealthCache(SQLiteDatabase db){db.execSQL("CREATE TABLE IF NOT EXISTS health_snapshots (id TEXT PRIMARY KEY NOT NULL, payload TEXT NOT NULL)");}
     private static void createActivities(SQLiteDatabase db){db.execSQL("CREATE TABLE IF NOT EXISTS activity_entries (id TEXT PRIMARY KEY NOT NULL, day TEXT NOT NULL, payload TEXT NOT NULL)");}
     private static void createPreferences(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS preferences (id TEXT PRIMARY KEY NOT NULL, payload TEXT NOT NULL)");
@@ -34,7 +37,7 @@ final class LocalStore extends SQLiteOpenHelper {
         JSONObject p=new JSONObject().put("id",foodId(data)).put("day",day(data)).put("name",text(data,"name",120,true));
         double minutes=number(data,"minutes",0.1,720),met=number(data,"met",1,30),kg=number(data,"weightKg",30,250);
         p.put("minutes",minutes).put("met",met).put("weightKg",kg).put("activeCalories",Math.round((met-1)*3.5*kg/200*minutes)).put("grossCalories",Math.round(met*3.5*kg/200*minutes));
-        p.put("description",text(data,"description",240,false)).put("code",text(data,"code",20,false)).put("source","Adult Compendium 2024 · MET estimate");return p;
+        p.put("additional",Boolean.TRUE.equals(data.opt("additional")));p.put("description",text(data,"description",240,false)).put("code",text(data,"code",20,false)).put("source","Adult Compendium 2024 · MET estimate");return p;
     }
     private void putActivity(SQLiteDatabase db,JSONObject p,int conflict) throws JSONException {
         ContentValues v=new ContentValues();v.put("id",p.getString("id"));v.put("day",p.getString("day"));v.put("payload",p.toString());db.insertWithOnConflict("activity_entries",null,v,conflict);
@@ -113,6 +116,25 @@ final class LocalStore extends SQLiteOpenHelper {
     synchronized JSONArray all(String table) throws JSONException{
         require(table.equals("daily_logs")||table.equals("calorie_entries")||table.equals("saved_foods")||table.equals("activity_entries"),"Invalid records.");
         JSONArray rows=new JSONArray();try(Cursor c=getReadableDatabase().query(table,new String[]{"payload"},null,null,null,null,table.equals("daily_logs")?"day ASC":table.equals("saved_foods")?"id ASC":"day ASC,id ASC")){while(c.moveToNext())rows.put(new JSONObject(c.getString(0)));}return rows;
+    }
+    static JSONObject mergeHealth(JSONObject previous,JSONObject incoming)throws JSONException{
+        JSONObject merged=new JSONObject(incoming.toString());JSONObject metrics=merged.getJSONObject("metrics"),old=previous.optJSONObject("metrics");
+        for(String key:new String[]{"active","total","steps","distance","sleep"}){JSONObject m=metrics.getJSONObject(key);if("error".equals(m.optString("state"))&&old!=null){JSONObject last=old.optJSONObject(key);if(last!=null&&!last.isNull("value")){m.put("value",last.getDouble("value")).put("cached",true).put("observedAt",last.optString("observedAt")).put("sources",last.optJSONArray("sources"));}}}
+        return merged;
+    }
+    synchronized JSONObject cacheHealth(JSONObject snapshot)throws JSONException{
+        String id=snapshot.getString("zone")+"/"+day(snapshot);JSONObject old=new JSONObject();SQLiteDatabase db=getWritableDatabase();try(Cursor c=db.query("health_snapshots",new String[]{"payload"},"id=?",new String[]{id},null,null,null)){if(c.moveToFirst())old=new JSONObject(c.getString(0));}
+        JSONObject merged=mergeHealth(old,snapshot);putPayload(db,"health_snapshots",id,merged,SQLiteDatabase.CONFLICT_REPLACE);return merged;
+    }
+    synchronized void clearHealthCache(){getWritableDatabase().delete("health_snapshots",null,null);}
+    synchronized JSONArray healthSnapshots(JSONObject permissions)throws JSONException{
+        JSONArray rows=new JSONArray();java.util.ArrayList<String> ids=new java.util.ArrayList<>();java.util.ArrayList<JSONObject> updates=new java.util.ArrayList<>();SQLiteDatabase db=getWritableDatabase();
+        try(Cursor c=db.query("health_snapshots",new String[]{"id","payload"},null,null,null,null,"id ASC")){while(c.moveToNext()){JSONObject p=new JSONObject(c.getString(1)),metrics=p.getJSONObject("metrics");boolean changed=false;
+            for(String key:new String[]{"active","total","steps","distance","sleep"})if(!permissions.optBoolean(key,false)){JSONObject old=metrics.optJSONObject(key);if(old==null||!"permission_denied".equals(old.optString("state"))||!old.isNull("value")){metrics.put(key,new JSONObject().put("state","permission_denied").put("value",JSONObject.NULL).put("sources",new JSONArray()).put("message","Read permission is off."));changed=true;}}
+            if(changed){ids.add(c.getString(0));updates.add(p);}rows.put(p);
+        }}
+        if(!updates.isEmpty()){db.beginTransaction();try{for(int i=0;i<updates.size();i++)putPayload(db,"health_snapshots",ids.get(i),updates.get(i),SQLiteDatabase.CONFLICT_REPLACE);db.setTransactionSuccessful();}finally{db.endTransaction();}}
+        return rows;
     }
     synchronized JSONObject request(String path,String method,String body) throws JSONException{
         if(path.equals("/api/activities")){

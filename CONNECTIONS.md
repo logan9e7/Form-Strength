@@ -1,4 +1,4 @@
-# Optional connections — 1.4.0
+# Optional connections — 1.5.0
 
 ## Gemini meal estimates (personal-project connection)
 
@@ -21,11 +21,11 @@ Official docs:
 
 ## Health Connect / fitness band
 
-Android 14+ only for this build. Move → Device → Connect opens Android's permission screen. Users can grant any subset of active calories, total calories and steps. Manage access opens OS controls. Sync reads a selected day; missing values stay blank. The device UI does not pretend a band or Google Fit account is connected merely because permissions exist.
+Android 14+ only for this build. Move → Device → Connect opens Android's permission screen. Users can grant any subset of active calories, total calories, steps, distance and sleep-session duration. Manage access opens OS controls. Sync reads the selected local day; missing values stay blank. The app refreshes stale data on foreground/resume/date selection and offers a seven-day refresh; no background syncing is performed. Daily activity uses midnight to midnight (today ends at now). Sleep-session duration uses previous noon to selected noon, labelled by ending date; it is not a sleep-stage estimate. Total burn is the default; active-only fallback is labelled. Only manually approved additional activities are added, once. Fat burned in grams is unavailable and is not inferred from calories. The device UI does not pretend a band or Google Fit account is connected merely because permissions exist.
 
 Sync the band using its companion app and enable its Health Connect sharing. A source may not support all fields. There is no direct Bluetooth connection or OAuth login to every band vendor in this release. Older Android versions show the feature as unavailable and retain manual logging.
 
-The permission-usage activity/alias is declared in the manifest. It describes the data types, purpose, local handling and how to revoke access. Readings are not written to the application's database, shared with AI or included in backups. No historical/background permission is requested; older-day availability remains subject to Health Connect's normal access window.
+The permission-usage activity/alias is declared in the manifest. It describes the data types, purpose, local handling and how to revoke access. Readings are cached in app-private SQLite by local date and timezone, never shared with AI or included in backups. Revoked metric permissions clear corresponding cached values on the next refresh. A failed read retains its previous value with a cached/error label and original observation timestamp. Empty reads clear previous values. Clear health cache removes snapshots only. No historical/background permission is requested; older-day availability remains subject to Health Connect's normal access window.
 
 Official docs:
 - https://developer.android.com/health-and-fitness/health-connect/get-started

@@ -61,3 +61,15 @@ Package unchanged; version code **5**; minimum API 26 for core features, Android
 **BLOCKED / not claimed:** no API key was supplied; `adb devices` again returned an empty list. Successful Gemini requests, Android Keystore operations, Health Connect permission UI/reads/revocation, band-source compatibility, actual schema-2→3 upgrade, native keyboard/picker/Back behavior and adaptive-launcher rendering have not been exercised on a phone/emulator. These are release gates, not passing tests.
 
 Additional device cases: deny one/two/all health permissions; revoke while a read is in flight; empty data versus a reported zero; only steps/only total burn; interval crossing local midnight/DST; key removal/replacement, quota/auth/model errors and offline Gemini failure; cancelled send confirmation; response arriving after meal text/date changes; backup roundtrip of AI provenance/activity entries. Refer to `CONNECTIONS.md` before public distribution. Use a protected backend/Firebase AI Logic setup for a publisher-managed AI service; do not distribute a shared API key.
+
+# 1.5.0 — current verification (13 November 2026)
+
+Version code 6, schema 4, original package/signing identity.
+
+- PASS: food/activity/tracker suites and new health reconciliation cases: total/active fallback, extras counted once, zero versus absent, denied/unavailable metrics, date+timezone matching and stale/future timestamps.
+- PASS: JVM cache merge preserves failed reading timestamps; no-data/denied clears values; additional activity defaults false; local windows handle DST 23-hour days, today clamping and future-date rejection.
+- PASS: browser contract fixtures (explicitly simulated, not live Health Connect) at 320/390/430 px: complete, partial permissions, cached error, no-data and reported zero. Historical meal/activity saves retain selected day; 1900 synced + 116 extra = 2016; unmarked activities are excluded. Seven-day queued/read states and progress checked. No horizontal body overflow at inspected widths.
+- PASS: default browser has unavailable device controls and never presents the simulated bridge as a live connection.
+- UI fixes: shared selected date, Home naming, historical water label, original cached observation versus last attempt, compact empty charts, sleep card spacing, simplified food/settings sections and contextual icons.
+
+Native build/signature/package checks are recorded in the release workflow. No physical device/emulator attached: actual schema migration/cache persistence, native permission grants/revocation, live source accuracy, keyboard/rotation/Back and upgrade preservation remain UNVERIFIED. Browser fixture coverage does not satisfy these gates. Android 14+ required for this integration.

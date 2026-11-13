@@ -1,3 +1,11 @@
+# 1.5.0 — reliable daily health context
+
+- Steps, distance, active/total burn and sleep-session duration through Health Connect.
+- Foreground auto-sync, seven-day refresh and persistent local cache with explicit timestamps/states.
+- Synced burn by default; explicitly additional manual activities only.
+- Shared date/timezone, missing versus zero states, compact progress, clearer food/settings hierarchy and consistent spacing.
+- Same signing identity and additive schema-4 migration. Live Android/fitness-band tests remain pending; see ANDROID_TEST_REPORT.md.
+
 # 1.3.0 — a faster daily companion
 
 - Rebuilt Today around food/protein, direct water additions and four one-tap habits.

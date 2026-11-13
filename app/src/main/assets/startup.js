@@ -1,5 +1,8 @@
 'use strict';
 let renderedDay=localDay();
-function refreshDay(){const day=localDay();$('todayDate').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'});$('day').max=$('foodDay').max=$('activityDay').max=$('deviceDay').max=day;if(day!==renderedDay){healthReading=null;healthRequestId=null;clearTimeout(healthTimer);renderHealthReading();if($('activityDay').value===renderedDay)$('activityDay').value=day;if($('deviceDay').value===renderedDay)$('deviceDay').value=day;if($('foodDay').value===renderedDay)$('foodDay').value=day;renderedDay=day;render();}}
-window.onNativeResume=()=>{refreshDay();refreshConnections();};document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshDay()});setInterval(refreshDay,60000);
-refreshDay();render();syncButtons();refreshConnections();loadAll();
+function refreshDay(){const now=localDay();if(now!==renderedDay){const wasToday=selectedDay===renderedDay;renderedDay=now;if(wasToday)changeDay(now);else renderDateContext()}$('day').max=now;renderDateContext();}
+window.onNativeResume=async()=>{refreshConnections();refreshDay();try{healthEntries=(await request('/api/health-snapshots')).entries;}catch{}render();maybeSyncHealth();};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){refreshConnections();refreshDay();maybeSyncHealth()}});setInterval(refreshDay,60000);
+refreshConnections();refreshDay();render();syncButtons();loadAll();
+function resizeSheets(){const height=window.visualViewport?.height||window.innerHeight;document.documentElement.style.setProperty('--visible-height',Math.floor(height)+'px');const el=document.activeElement;if(el?.closest?.('dialog[open]')&&/INPUT|TEXTAREA|SELECT/.test(el.tagName))requestAnimationFrame(()=>el.scrollIntoView({block:'nearest',behavior:'instant'}));}
+window.visualViewport?.addEventListener('resize',resizeSheets);window.addEventListener('resize',resizeSheets);resizeSheets();
