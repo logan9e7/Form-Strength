@@ -1,3 +1,10 @@
+# 1.5.1 — centered identity and redesigned Home
+
+- Centered wordmark with balanced logo/profile controls.
+- Compact energy card, paired meal/activity actions, movement section and expandable burn details.
+- Smaller bottom navigation and consistent spacing.
+- Data schema and permissions unchanged.
+
 # 1.5.0 — reliable daily health context
 
 - Steps, distance, active/total burn and sleep-session duration through Health Connect.

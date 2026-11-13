@@ -73,3 +73,6 @@ Version code 6, schema 4, original package/signing identity.
 - UI fixes: shared selected date, Home naming, historical water label, original cached observation versus last attempt, compact empty charts, sleep card spacing, simplified food/settings sections and contextual icons.
 
 Native build/signature/package checks are recorded in the release workflow. No physical device/emulator attached: actual schema migration/cache persistence, native permission grants/revocation, live source accuracy, keyboard/rotation/Back and upgrade preservation remain UNVERIFIED. Browser fixture coverage does not satisfy these gates. Android 14+ required for this integration.
+
+## 1.5.1 Home redesign
+PASS: centered brand geometry and no horizontal overflow at 320/390/430 browser widths; redesigned quick meal/activity buttons open their correct forms. Existing regression suites, JS syntax, unique IDs, signed Android compilation pass. Same signer, version code 7, no schema/permission changes. Physical Android testing remains pending.

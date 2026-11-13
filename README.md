@@ -1,11 +1,11 @@
 # Form & Strength — offline Android companion
 
-**1.5.0 · version code 6**. Daily food, protein, water, habits and strength routines in an offline Android app. Bundled web UI inside an Android WebView; native SQLite stores all records. No app account, analytics or ads. Core logging works offline. Optional Gemini uses native HTTPS only after the user approves a meal; optional Health Connect reads supported device data.
+**1.5.1 · version code 7**. Daily food, protein, water, habits and strength routines in an offline Android app. Bundled web UI inside an Android WebView; native SQLite stores all records. No app account, analytics or ads. Core logging works offline. Optional Gemini uses native HTTPS only after the user approves a meal; optional Health Connect reads supported device data.
 
 ## Install as an update
 
 1. In the current app, use Profile → Backup & restore → Back up to a file. In older versions the backup button is directly in Profile.
-2. Download and open `Form-Strength-1.5.0.apk` on your Android phone. Tap **Update**, without uninstalling.
+2. Download and open `Form-Strength-1.5.1.apk` on your Android phone. Tap **Update**, without uninstalling.
 3. Open Profile to set your own starting measurements and optional goals. All fields are optional. Existing check-ins and meals remain intact.
 
 Application ID `com.logan.formstrength` and the original signing key are unchanged. Android 8.0+ with a current System WebView is supported by the build. Device installation and native runtime behavior remain unverified; see `ANDROID_TEST_REPORT.md`.
