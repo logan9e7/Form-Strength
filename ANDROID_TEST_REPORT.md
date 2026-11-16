@@ -79,3 +79,11 @@ PASS: centered brand geometry and no horizontal overflow at 320/390/430 browser 
 
 ## 1.5.2 safe-area correction
 Native inset owner changed: root pads by the union/max of system bars, cutout and IME; handled types are zeroed on the returned WindowInsets.Builder, rather than returning original offsets to WebView. This retains inset dispatch and avoids applying safe-area offsets twice. Phone header reduced 70→58 CSS px and redundant movement spacing removed. Compile/package and browser layout checks cover source behavior only. Actual Pixel cutout, status-bar visibility, landscape, gesture/three-button navigation and keyboard transitions must be verified on-device.
+
+## 1.6.0 Indian food and daily tracking
+
+PASS: existing parser/nutrition/activity/health regressions; all enabled reference default portions; quantity-prefix/suffix and word quantities; 4 rotis=320, 4 rotis+1 cup dal=520; INDB gram/serving and protein scaling, source-review blocking, unknown ingredient refusal, names containing parentheses/and/with, saved recipes. Live localhost HTTP tests cover search/detail/estimate, invalid JSON/type/length/limits and unknown IDs.
+
+PASS: browser demo at 390px typed meal → visible 4×80 + 1×200 →520 → save in diary and My foods; water 250+500=750ml; no-added-sugar mark and 1-day streak preserved through meal save/reload. Indian food finder Poha →2 servings shows 322kcal/6.6g protein; flagged cutlet disabled. Unmarking sugar preserves water. Historical date shows its own empty water/habit/food state. 320/430 layout inspected with no horizontal body overflow. Screenshot uses demo records, not user health data.
+
+PASS: JS syntax/DOM IDs and references, JVM native validation, Android resources/Java/DEX/signing, matching original signer. No schema, native health permission or connection changes. API server is local implementation, not a deployed public service. Native SQLite upgrade, keyboard, notch and actual live Gemini/Health Connect remain unverified on-device; adb has no attached phone/emulator.

@@ -1,16 +1,22 @@
 # Form & Strength — offline Android companion
 
-**1.5.2 · version code 8**. Daily food, protein, water, habits and strength routines in an offline Android app. Bundled web UI inside an Android WebView; native SQLite stores all records. No app account, analytics or ads. Core logging works offline. Optional Gemini uses native HTTPS only after the user approves a meal; optional Health Connect reads supported device data.
+**1.6.0 · version code 9**. Daily food, protein, water, habits and strength routines in an offline Android app. Bundled web UI inside an Android WebView; native SQLite stores all records. No app account, analytics or ads. Core logging works offline. Optional Gemini uses native HTTPS only after the user approves a meal; optional Health Connect reads supported device data.
 
 ## Install as an update
 
 1. In the current app, use Profile → Backup & restore → Back up to a file. In older versions the backup button is directly in Profile.
-2. Download and open `Form-Strength-1.5.2.apk` on your Android phone. Tap **Update**, without uninstalling.
+2. Download and open `Form-Strength-1.6.0.apk` on your Android phone. Tap **Update**, without uninstalling.
 3. Open Profile to set your own starting measurements and optional goals. All fields are optional. Existing check-ins and meals remain intact.
 
 Application ID `com.logan.formstrength` and the original signing key are unchanged. Android 8.0+ with a current System WebView is supported by the build. Device installation and native runtime behavior remain unverified; see `ANDROID_TEST_REPORT.md`.
 
-## New in 1.5
+## New in 1.6
+
+- 1,070 food references with Indian recipe search, explicit portion scaling and reviewed AI/manual fallback.
+- Water and no-added-sugar tracking highlighted above energy, with weekly marks and a date-aware streak.
+- Shared local food reference API: see `api/README.md`. No public API hosting required for the APK.
+
+## Previous additions in 1.5
 
 - Five Health Connect metrics: active/total burn, steps, distance and sleep-session duration. Foreground auto-sync, selected-day and seven-day refresh.
 - Shared local date/timezone across all tabs; stale/cached, missing, denied, error and reported-zero states.

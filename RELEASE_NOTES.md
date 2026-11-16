@@ -1,3 +1,11 @@
+# 1.6.0 — Indian meals and daily priorities
+
+- Expanded catalog to 1,070 references: 1,014 INDB recipes, 50 legacy foods, 6 transparent ingredient models. 144 suspicious source references require review.
+- Indian food/portion finder; visible quantity × per-unit calories; exact quantity scaling, source attribution and unknown-food safeguards.
+- Local REST reference API and canonical stored catalog; existing SQLite My foods API retains personal recipes. Optional reviewed Gemini estimates unchanged.
+- Prominent water and no-added-sugar cards, one-tap tracking, 7-day count and selected-date streak; no inferred sugar status from meal text.
+- Same package/signing identity, version code 9; schema and health permissions unchanged.
+
 # 1.5.2 — single safe-area owner
 
 - Native shell reserves the maximum status-bar, display-cutout and keyboard insets once; zeroes handled inset types before WebView dispatch to prevent duplicate padding.
