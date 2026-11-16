@@ -1,3 +1,9 @@
+# 1.6.1 — restore energy-first Home
+
+- Restore the 1.5.2 Home arrangement: energy and movement first, then water and compact habits. Remove prominent sugar card without deleting habit/water records.
+- Keep the expanded offline catalog/API and live typed-meal calculations. Put calculation status and editable total directly below the entered meal; food search and Gemini remain secondary.
+- Same signer, package, schema and permissions; version code 10.
+
 # 1.6.0 — Indian meals and daily priorities
 
 - Expanded catalog to 1,070 references: 1,014 INDB recipes, 50 legacy foods, 6 transparent ingredient models. 144 suspicious source references require review.
