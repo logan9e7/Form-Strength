@@ -11,3 +11,6 @@ body{font-size:15px}main{max-width:880px}.app-header{max-width:944px}h1{font-siz
 @media(max-width:359px){.utility-row{flex-wrap:wrap;gap:0}.hero-link>strong{font-size:49px}.hero-bottom{align-items:flex-start}.hero-bottom .btn{padding:12px}.habit-tile{padding:12px 9px}.habit-tick{width:22px;height:22px}.water-actions{gap:6px}.water-actions .btn{padding:10px}.brand{font-size:17px}.goal-metric{flex-wrap:wrap}.goal-metric .remaining{margin-left:0}.calendar-marks{gap:1px;font-size:8px}}
 
 .utility-row .text-btn{display:inline-flex;align-items:center;gap:5px}.utility-row .icon{width:13px;height:13px}
+
+/* Meal-first logging: make typing the primary action and the estimate instantly scannable. */
+.meal-input-label{font-size:15px;font-weight:650}.meal-typing-hint{margin:-8px 0 12px}.meal-input-label textarea{font-size:17px;line-height:1.5;min-height:104px;padding:15px;border:1.5px solid #aebda4;border-radius:15px;background:#fff}.quick-summary{margin:14px 0 10px;padding:16px 18px;border-radius:16px;background:#e6efd9;color:#173d32;font-size:20px;font-weight:750;letter-spacing:-.4px}.quick-summary[hidden]{display:none}.auto-meal-status{font-size:12px;line-height:1.5;margin:8px 0 10px}
