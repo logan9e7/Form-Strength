@@ -38,7 +38,7 @@
     previous=end;let q;
     if(prefix&&tail){issues.push('Check the wording around '+food.name+'. Put the portion before the food.');continue}
     q=quantity(prefix||tail,food);if(q.error){issues.push(q.error);continue}
-    if(food.reviewRequired){issues.push(food.name+': source recipe needs review. Use a label or reviewed AI/manual estimate.');continue}const calories=q.qty*food.units[q.unit];if(!Number.isFinite(calories)||calories>20000){issues.push('Portion is too large for '+food.name+'.');continue}
+    if(food.reviewRequired){issues.push(food.id==='supp-whey-generic'?'Whey varies by brand and scoop. Use From a label, enter your product values, then save it in My foods.':food.name+': source recipe needs review. Use a label or reviewed AI/manual estimate.');continue}const calories=q.qty*food.units[q.unit];if(!Number.isFinite(calories)||calories>20000){issues.push('Portion is too large for '+food.name+'.');continue}
     const assumptions=[q.assumption,food.note].filter(Boolean).join(' ');
     items.push({id:food.id,name:food.name,quantity:q.qty,unit:q.unit,calories,proteinG:food.proteinUnits?.[q.unit]===undefined?null:q.qty*food.proteinUnits[q.unit],source:food.source,assumptions,unitCalories:food.units[q.unit],label:q.qty+' '+q.unit+(['g','ml','tsp','tbsp'].includes(q.unit)||q.qty===1?'':'s')+' '+food.name});
    }

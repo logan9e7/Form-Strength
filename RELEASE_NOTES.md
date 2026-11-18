@@ -1,3 +1,10 @@
+# 1.6.2 — reviewed meal entry refinement
+
+- Reviewed PR #1: retain 16 supplemental references and product-label safeguards. Correct salad model, raw-corn label and cauliflower portion.
+- Fix native asset allowlist so supplement foods load in Android; keep API lookup and estimation catalogs aligned. Add parity/asset-contract and API regressions.
+- Figma-designed meal entry: one editable total, concise portion breakdown, optional nutrition details, navy/cyan actions and responsive typography.
+- Preserve the energy-first Home layout and existing records. Same package, signer and schema. Physical Android testing remains pending.
+
 # 1.6.1 — restore energy-first Home
 
 - Restore the 1.5.2 Home arrangement: energy and movement first, then water and compact habits. Remove prominent sugar card without deleting habit/water records.

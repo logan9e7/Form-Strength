@@ -18,7 +18,7 @@
       "scoop": 23.43,
       "g": 0.781
     },
-    "source": "USDA FoodData Central · generic whey protein powder reference",
+    "source": "USDA FoodData Central \u00b7 generic whey protein powder reference",
     "note": "Generic whey-powder reference only; brand, flavour and scoop size vary. To avoid misleading precision, enter the calories and protein from your own pack label in From a label or save it in My foods.",
     "sourceServing": "30 g reference scoop",
     "reviewRequired": true
@@ -64,7 +64,7 @@
       "slice": 3.98,
       "g": 0.1245
     },
-    "source": "USDA FoodData Central · whole-wheat bread reference",
+    "source": "USDA FoodData Central \u00b7 whole-wheat bread reference",
     "note": "Approximate 32 g slice. Bakery and packaged bread vary; seeds, added sugar and slice weight change the values."
   },
   {
@@ -80,17 +80,17 @@
     "defaultUnit": "g",
     "defaultQty": 100,
     "units": {
-      "g": 0.25,
-      "bowl": 37.5,
-      "cup": 20
+      "g": 0.21,
+      "bowl": 31.5,
+      "cup": 16.8
     },
     "proteinUnits": {
-      "g": 0.012,
-      "bowl": 1.8,
-      "cup": 0.96
+      "g": 0.009093333333333332,
+      "bowl": 1.3639999999999999,
+      "cup": 0.7274666666666665
     },
-    "source": "USDA FoodData Central · mixed raw vegetables, generic estimate",
-    "note": "Approximate mix of cucumber, tomato, carrot and leafy vegetables. No dressing, oil, cheese, croutons or sauces included; add these separately. A bowl is assumed to be 150 g."
+    "source": "App ingredient model \u00b7 USDA raw vegetable references",
+    "note": "Illustrative undressed mix: 50g cucumber, 40g tomato, 30g carrot, 30g lettuce per 150g bowl; cup assumed 80g. No dressing, oil, cheese, seeds or sauces; add those separately. Actual mixes vary."
   },
   {
     "id": "veg-carrot-raw",
@@ -110,7 +110,7 @@
       "g": 0.0093,
       "piece": 0.558
     },
-    "source": "USDA FoodData Central · raw carrot",
+    "source": "USDA FoodData Central \u00b7 raw carrot",
     "note": "Raw carrot reference; one medium carrot assumed to be 60 g."
   },
   {
@@ -131,7 +131,7 @@
       "g": 0.0136,
       "cup": 0.68
     },
-    "source": "USDA FoodData Central · raw lettuce",
+    "source": "USDA FoodData Central \u00b7 raw lettuce",
     "note": "Raw lettuce reference; one cup shredded assumed to be 50 g."
   },
   {
@@ -152,7 +152,7 @@
       "g": 0.0286,
       "cup": 0.858
     },
-    "source": "USDA FoodData Central · raw spinach",
+    "source": "USDA FoodData Central \u00b7 raw spinach",
     "note": "Raw spinach reference; one cup loosely packed assumed to be 30 g. Cooked spinach weighs differently."
   },
   {
@@ -173,7 +173,7 @@
       "g": 0.0128,
       "cup": 0.896
     },
-    "source": "USDA FoodData Central · raw cabbage",
+    "source": "USDA FoodData Central \u00b7 raw cabbage",
     "note": "Raw cabbage reference; one cup shredded assumed to be 70 g."
   },
   {
@@ -197,7 +197,7 @@
       "g": 0.0086,
       "piece": 1.032
     },
-    "source": "USDA FoodData Central · raw green sweet pepper",
+    "source": "USDA FoodData Central \u00b7 raw green sweet pepper",
     "note": "Raw green capsicum reference; one medium pepper assumed to be 120 g."
   },
   {
@@ -219,7 +219,7 @@
       "g": 0.011,
       "piece": 1.21
     },
-    "source": "USDA FoodData Central · raw onion",
+    "source": "USDA FoodData Central \u00b7 raw onion",
     "note": "Raw onion reference; one medium onion assumed to be 110 g."
   },
   {
@@ -241,7 +241,7 @@
       "g": 0.0161,
       "piece": 1.61
     },
-    "source": "USDA FoodData Central · raw beetroot",
+    "source": "USDA FoodData Central \u00b7 raw beetroot",
     "note": "Raw beetroot reference; one small beetroot assumed to be 100 g."
   },
   {
@@ -256,13 +256,13 @@
     "defaultQty": 100,
     "units": {
       "g": 0.25,
-      "cup": 27
+      "cup": 26.75
     },
     "proteinUnits": {
       "g": 0.0192,
       "cup": 2.0736
     },
-    "source": "USDA FoodData Central · raw cauliflower",
+    "source": "USDA FoodData Central \u00b7 raw cauliflower",
     "note": "Raw cauliflower reference; one cup chopped assumed to be 107 g."
   },
   {
@@ -284,7 +284,7 @@
       "g": 0.0183,
       "cup": 2.013
     },
-    "source": "USDA FoodData Central · raw green beans",
+    "source": "USDA FoodData Central \u00b7 raw green beans",
     "note": "Raw green beans reference; one cup chopped assumed to be 110 g."
   },
   {
@@ -306,12 +306,12 @@
       "g": 0.0542,
       "cup": 7.588
     },
-    "source": "USDA FoodData Central · raw green peas",
+    "source": "USDA FoodData Central \u00b7 raw green peas",
     "note": "Raw green peas reference; one cup assumed to be 140 g."
   },
   {
     "id": "veg-sweetcorn",
-    "name": "Sweet corn kernels",
+    "name": "Raw sweet corn kernels",
     "aliases": [
       "sweet corn kernels",
       "sweet corn",
@@ -323,14 +323,14 @@
     "defaultQty": 100,
     "units": {
       "g": 0.86,
-      "cup": 132
+      "cup": 132.44
     },
     "proteinUnits": {
       "g": 0.033,
       "cup": 5.082
     },
-    "source": "USDA FoodData Central · sweet corn kernels",
-    "note": "Cooked sweet corn kernel reference; one cup assumed to be 154 g. Butter and toppings are extra."
+    "source": "USDA FoodData Central \u00b7 sweet corn kernels",
+    "note": "Raw sweet corn kernel reference; one cup assumed to be 154 g. Cooked corn and butter or toppings need their own values."
   },
   {
     "id": "veg-zucchini-raw",
@@ -350,7 +350,7 @@
       "g": 0.0121,
       "cup": 1.21
     },
-    "source": "USDA FoodData Central · raw zucchini",
+    "source": "USDA FoodData Central \u00b7 raw zucchini",
     "note": "Raw zucchini reference; one cup chopped assumed to be 100 g."
   }
 ]
