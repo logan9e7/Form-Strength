@@ -5,8 +5,8 @@ assert(!estimate('').ready);assert.equal(estimate('2 masala dosa').items[0].id,'
 assert(estimate('dal').items[0].label.includes('1 cup'));assert(estimate('1 bowl dal').items[0].assumptions.includes('Bowl'));
 assert.equal(search('rot')[0].name,'Roti');assert(foods.length>=30);assert(!estimate('rice 100g extra').ready);
 
-for(const [input,calories]of [['1 scoop whey protein',106],['30 g whey protein powder',106],['5 g creatine',0],['creatine monohydrate',0],['2 slices brown bread',161],['1 bowl salad',38],['100 g carrot',41],['100 g spinach',23],['100 g capsicum',20],['1 cup sweet corn',132]]){const result=estimate(input);assert(result.ready,input+': '+JSON.stringify(result.issues));assert.equal(result.total,calories,input)}
-assert(estimate('1 scoop whey protein').items[0].proteinG>23);
+assert(!estimate('1 scoop whey protein').ready);assert(estimate('1 scoop whey protein').issues.some(x=>x.includes('review')));assert(!estimate('30 g whey protein powder').ready);\nfor(const [input,calories]of [['5 g creatine',0],['creatine monohydrate',0],['2 slices brown bread',161],['1 bowl salad',38],['100 g carrot',41],['100 g spinach',23],['100 g capsicum',20],['1 cup sweet corn',132]]){const result=estimate(input);assert(result.ready,input+': '+JSON.stringify(result.issues));assert.equal(result.total,calories,input)}
+assert(search('whey')[0].reviewRequired);
 assert.equal(estimate('5 g creatine').items[0].proteinG,0);
 assert(estimate('1 bowl salad').items[0].assumptions.includes('dressing'));
 assert(search('whey')[0].name.includes('Whey'));
