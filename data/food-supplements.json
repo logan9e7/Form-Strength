@@ -19,8 +19,9 @@
       "g": 0.781
     },
     "source": "USDA FoodData Central · generic whey protein powder reference",
-    "note": "Generic reference: 30 g scoop. Actual calories and protein vary by brand, flavour and scoop weight; use the nutrition label for an accurate entry.",
-    "sourceServing": "30 g reference scoop"
+    "note": "Generic whey-powder reference only; brand, flavour and scoop size vary. To avoid misleading precision, enter the calories and protein from your own pack label in From a label or save it in My foods.",
+    "sourceServing": "30 g reference scoop",
+    "reviewRequired": true
   },
   {
     "id": "supp-creatine-mono",
