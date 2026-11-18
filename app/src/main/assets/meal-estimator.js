@@ -1,6 +1,6 @@
 /* Deterministic offline parser. Unknown foods/units remain unresolved, never silently omitted. */
 (function(root){
- const foods=typeof module==='object'&&module.exports?require('./food-reference.js'):root.FOOD_REFERENCE;
+ const foods=typeof module==='object'&&module.exports?[...require('./food-reference.js'),...require('./food-supplements.js')]:root.FOOD_REFERENCE;
  const aliasMap=new Map();let activeFoods=foods;
  function indexFoods(saved=[]){activeFoods=[...foods,...saved];aliasMap.clear();for(const food of activeFoods)for(const alias of food.aliases)aliasMap.set(normalize(alias),food);aliasPattern=[...aliasMap.keys()].sort((a,b)=>b.length-a.length).map(escape).join('|');}
 
