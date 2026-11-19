@@ -1,4 +1,4 @@
-# Optional connections — 1.5.0
+# Optional connections — 1.6.3
 
 ## Gemini meal estimates (personal-project connection)
 
@@ -34,3 +34,8 @@ Official docs:
 ## Verification limits
 
 No Gemini API key was supplied and no phone/emulator was attached. Native compilation, schema/unit validation and browser/manual-log testing are completed; successful live AI responses, encrypted-key operations on-device, Health Connect permission grants and actual band readings remain unverified. Do not label this integration live-tested or Play Store ready. Play Console health-permission declarations, privacy/data-safety updates and real-device permission-revocation/upgrade tests remain release gates.
+
+## 1.6.3 connection hardening
+A saved Gemini key can be retained by leaving the key field blank when changing the model ID. First setup still requires a key. Removal waits for persistent preference deletion and reports failures. The Android Keystore key remains app-private and non-exportable; per-use device authentication is not required, and explicit meal-send consent remains mandatory.
+
+Health Connect platform symbols are isolated in an API34 helper behind an SDK-independent facade. Older Android releases receive explicit unsupported state; manual logging remains available. Source labels fall back to the precise package ID when Android package visibility prevents resolving a friendly name. No broad installed-app visibility permission is requested.

@@ -4,23 +4,85 @@ cd "$(dirname "$0")/.."
 : "${ANDROID_PLATFORM_JAR:?Set ANDROID_PLATFORM_JAR to android.jar}"
 : "${ANDROID_BUILD_TOOLS:?Set ANDROID_BUILD_TOOLS}"
 : "${ECJ_JAR:?Set ECJ_JAR}"
-mkdir -p build/classes build/dex build/compiled outputs
+
+# Read release metadata once. Never reuse a prior artifact after a failed build.
+readarray -t manifest_values < <(python3 - <<'PY'
+import re, xml.etree.ElementTree as ET
+root=ET.parse('app/src/main/AndroidManifest.xml').getroot()
+a='{http://schemas.android.com/apk/res/android}'
+version=root.get(a+'versionName','')
+if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]{0,63}',version):
+ raise SystemExit('Invalid Android versionName for release filename')
+print(version)
+print(root.find('uses-sdk').get(a+'minSdkVersion'))
+PY
+)
+[[ ${#manifest_values[@]} == 2 ]] || { echo 'Could not read release metadata.' >&2; exit 1; }
+release_name="Form-Strength-${manifest_values[0]}"
+min_api="${manifest_values[1]}"
+[[ "$min_api" =~ ^[0-9]+$ ]] || { echo 'Invalid minimum API.' >&2; exit 1; }
+if [[ -n "${APK_KEYSTORE:-}" ]]; then
+ : "${APK_KEYSTORE_PASSWORD:?Set signing password in environment}"
+ release_path="outputs/$release_name.apk"
+else
+ release_path="outputs/$release_name-unsigned.apk"
+fi
+export release_path
+python3 - <<'PY'
+import os, shutil
+from pathlib import Path
+# All paths are fixed, repository-relative build outputs. Keep other releases/tests.
+for name in ('classes','dex','compiled'):
+ p=Path('build')/name
+ if p.is_symlink() or p.is_file():p.unlink()
+ elif p.exists():shutil.rmtree(p)
+ p.mkdir(parents=True)
+for name in ('base.apk','aligned.apk','classes.jar','sources.args','release.apk'):
+ (Path('build')/name).unlink(missing_ok=True)
+Path('outputs').mkdir(exist_ok=True)
+Path(os.environ['release_path']).unlink(missing_ok=True)
+sources=sorted(Path('app/src/main/java').rglob('*.java'))
+if not sources:raise SystemExit('No Java sources found')
+def quote(path):
+ value=str(path)
+ if '\n' in value or '\r' in value:raise SystemExit('Newlines in Java source paths are unsupported')
+ return '"'+value.replace('\\','\\\\').replace('"','\\"')+'"'
+Path('build/sources.args').write_text('\n'.join(map(quote,sources))+'\n')
+PY
 "$ANDROID_BUILD_TOOLS/aapt2" compile --dir app/src/main/res -o build/compiled/resources.zip
 "$ANDROID_BUILD_TOOLS/aapt2" link -o build/base.apk --manifest app/src/main/AndroidManifest.xml -I "$ANDROID_PLATFORM_JAR" -A app/src/main/assets build/compiled/resources.zip
-java -jar "$ECJ_JAR" -8 -bootclasspath "$ANDROID_PLATFORM_JAR:$ANDROID_BUILD_TOOLS/core-lambda-stubs.jar" -d build/classes $(find app/src/main/java -name '*.java' | sort)
-find build/classes -name '*.class' -print0 | sort -z | xargs -0 "$ANDROID_BUILD_TOOLS/d8" --release --lib "$ANDROID_PLATFORM_JAR" --min-api 26 --output build/dex
+java -jar "$ECJ_JAR" -8 -bootclasspath "$ANDROID_PLATFORM_JAR:$ANDROID_BUILD_TOOLS/core-lambda-stubs.jar" -d build/classes @build/sources.args
+# One archive keeps D8 a single invocation even with very large class sets.
+python3 - <<'PY'
+from pathlib import Path
+import zipfile
+classes=sorted(Path('build/classes').rglob('*.class'))
+if not classes:raise SystemExit('Java compilation produced no classes')
+with zipfile.ZipFile('build/classes.jar','w') as jar:
+ for path in classes:
+  entry=zipfile.ZipInfo(path.relative_to('build/classes').as_posix(),(1980,1,1,0,0,0))
+  entry.external_attr=0o644 << 16
+  jar.writestr(entry,path.read_bytes())
+PY
+"$ANDROID_BUILD_TOOLS/d8" --release --lib "$ANDROID_PLATFORM_JAR" --min-api "$min_api" --output build/dex build/classes.jar
 python3 - <<'PY'
 import zipfile
 from pathlib import Path
+files=sorted(Path('build/dex').glob('*.dex'))
+if not files:raise SystemExit('D8 produced no DEX files')
 with zipfile.ZipFile('build/base.apk','a') as z:
- for file in Path('build/dex').glob('*.dex'):z.write(file,file.name)
+ for path in files:
+  entry=zipfile.ZipInfo(path.name,(1980,1,1,0,0,0));entry.external_attr=0o644 << 16
+  z.writestr(entry,path.read_bytes())
 PY
 "$ANDROID_BUILD_TOOLS/zipalign" -f -p 4 build/base.apk build/aligned.apk
 if [[ -n "${APK_KEYSTORE:-}" ]]; then
- : "${APK_KEYSTORE_PASSWORD:?Set signing password in environment}"
- "$ANDROID_BUILD_TOOLS/apksigner" sign --ks "$APK_KEYSTORE" --ks-key-alias form-strength --ks-pass env:APK_KEYSTORE_PASSWORD --key-pass env:APK_KEYSTORE_PASSWORD --out outputs/Form-Strength-1.6.2.apk build/aligned.apk
- "$ANDROID_BUILD_TOOLS/apksigner" verify --verbose --print-certs outputs/Form-Strength-1.6.2.apk
+ "$ANDROID_BUILD_TOOLS/apksigner" sign --ks "$APK_KEYSTORE" --ks-key-alias "${APK_KEY_ALIAS:-form-strength}" --ks-pass env:APK_KEYSTORE_PASSWORD --key-pass env:APK_KEYSTORE_PASSWORD --out build/release.apk build/aligned.apk
+ "$ANDROID_BUILD_TOOLS/apksigner" verify --verbose --print-certs build/release.apk
 else
- cp build/aligned.apk outputs/Form-Strength-unsigned.apk
+ cp build/aligned.apk build/release.apk
  echo 'Unsigned APK built. Set APK_KEYSTORE and APK_KEYSTORE_PASSWORD for an installable release.'
 fi
+"$ANDROID_BUILD_TOOLS/zipalign" -c -p 4 build/release.apk
+mv -- build/release.apk "$release_path"
+printf 'Release artifact: %s\n' "$release_path"

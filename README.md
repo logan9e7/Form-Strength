@@ -1,11 +1,11 @@
 # Form & Strength — offline Android companion
 
-**1.6.2 · version code 11**. Daily food, protein, water, habits and strength routines in an offline Android app. Bundled web UI inside an Android WebView; native SQLite stores all records. No app account, analytics or ads. Core logging works offline. Optional Gemini uses native HTTPS only after the user approves a meal; optional Health Connect reads supported device data.
+**1.6.3 · version code 12**. Daily food, protein, water, habits and strength routines in an offline Android app. Bundled web UI inside an Android WebView; native SQLite stores all records. No app account, analytics or ads. Core logging works offline. Optional Gemini uses native HTTPS only after the user approves a meal; optional Health Connect reads supported device data.
 
 ## Install as an update
 
 1. In the current app, use Profile → Backup & restore → Back up to a file. In older versions the backup button is directly in Profile.
-2. Download and open `Form-Strength-1.6.2.apk` on your Android phone. Tap **Update**, without uninstalling.
+2. Download and open `Form-Strength-1.6.3.apk` on your Android phone. Tap **Update**, without uninstalling.
 3. Open Profile to set your own starting measurements and optional goals. All fields are optional. Existing check-ins and meals remain intact.
 
 Application ID `com.logan.formstrength` and the original signing key are unchanged. Android 8.0+ with a current System WebView is supported by the build. Device installation and native runtime behavior remain unverified; see `ANDROID_TEST_REPORT.md`.
@@ -46,7 +46,7 @@ A shake habit checkmark does not add calories; log the shake in Food. “Sugar-f
 
 `form_strength.db` lives in app-private internal storage. Updates with the same signing key preserve it. Uninstalling or clearing storage deletes records. Automatic Android backup is disabled; export a JSON backup before changing phones.
 
-Schema version 4 adds a local Health Connect snapshot cache; schema version 3 adds activity records alongside the schema-2 `preferences` and `saved_foods` using non-destructive `CREATE TABLE IF NOT EXISTS`; existing tables/payloads stay intact. Format-3 backups include profile, saved foods, check-ins, food entries and activities. Older exports remain accepted. Full-file validation precedes a single import transaction. Existing check-in dates, food IDs, saved-food IDs and a completed profile are retained. New saved foods merge; a missing/uncompleted profile can be restored. Exported JSON is readable, so choose a trusted destination. Older app versions may discard new fields when importing/re-exporting newer backups.
+Schema version 5 adds an activity-date index and enforces saved-food capacity transactionally; schema version 4 adds a local Health Connect snapshot cache; schema version 3 adds activity records alongside the schema-2 `preferences` and `saved_foods` using non-destructive `CREATE TABLE IF NOT EXISTS`; existing tables/payloads stay intact. Format-3 backups include profile, saved foods, check-ins, food entries and activities. Older exports remain accepted. Full-file validation precedes a single import transaction. Existing check-in dates, food IDs, saved-food IDs and a completed profile are retained. New saved foods merge; a missing/uncompleted profile can be restored. Exported JSON is readable, so choose a trusted destination. Older app versions may discard new fields when importing/re-exporting newer backups.
 
 ## Source layout
 

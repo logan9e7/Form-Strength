@@ -62,6 +62,15 @@ public class ValidationTest {
   JSONObject spring=HealthConnection.windows("2026-03-08",java.time.ZoneId.of("America/New_York"),java.time.Instant.parse("2026-03-10T12:00:00Z"));check(java.time.Duration.between(java.time.Instant.parse(spring.getString("periodStart")),java.time.Instant.parse(spring.getString("periodEnd"))).toHours()==23,"DST day uses calendar boundaries, not 24 fixed hours");
   JSONObject todayWindow=HealthConnection.windows("2026-11-13",java.time.ZoneId.of("Asia/Kolkata"),java.time.Instant.parse("2026-11-13T04:30:00Z"));check(todayWindow.getString("periodEnd").equals("2026-11-13T04:30:00Z"),"today ends at read time");check(todayWindow.getString("sleepEnd").equals(todayWindow.getString("periodEnd")),"incomplete sleep window clamped to read time");
   rejects(()->HealthConnection.windows("2026-11-14",java.time.ZoneId.of("Asia/Kolkata"),java.time.Instant.parse("2026-11-13T04:30:00Z")),"future read date rejected");
+  java.util.Set<String> existingSaved=new java.util.HashSet<>();existingSaved.add("existing");
+  org.json.JSONArray repeatedSaved=new org.json.JSONArray().put(new JSONObject().put("id","existing")).put(new JSONObject().put("id","new-food")).put(new JSONObject().put("id","new-food"));
+  check(LocalStore.newSavedFoodCount(repeatedSaved,existingSaved)==1,"import cap counts unique additions rather than rows or duplicates");
+  check(existingSaved.size()==1,"capacity planning does not mutate existing ID set");
+  LocalStore.requireSavedFoodCapacity(999,1);LocalStore.requireSavedFoodCapacity(1000,0);LocalStore.requireSavedFoodCapacity(1001,0);
+  rejects(()->LocalStore.requireSavedFoodCapacity(1000,1),"full saved library rejects a new imported ID");
+  rejects(()->LocalStore.requireSavedFoodCapacity(999,2),"combined existing and imported rows obey cap");
+  rejects(()->LocalStore.requireSavedFoodCapacity(1001,1),"legacy overfull library cannot grow");
+  rejects(()->LocalStore.requireSavedFoodCapacity(-1,0),"invalid capacity input rejected");
   System.out.println("Passed native validation: canonical fields, dates, ranges, fractions and backup validation.");
  }
 }

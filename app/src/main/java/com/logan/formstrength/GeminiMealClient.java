@@ -24,15 +24,44 @@ final class GeminiMealClient {
  private javax.crypto.SecretKey key()throws Exception{KeyStore store=KeyStore.getInstance("AndroidKeyStore");store.load(null);if(!store.containsAlias(ALIAS)){KeyGenerator g=KeyGenerator.getInstance("AES","AndroidKeyStore");g.init(new KeyGenParameterSpec.Builder(ALIAS,KeyProperties.PURPOSE_ENCRYPT|KeyProperties.PURPOSE_DECRYPT).setBlockModes(KeyProperties.BLOCK_MODE_GCM).setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE).build());g.generateKey();}return (javax.crypto.SecretKey)store.getKey(ALIAS,null);}
  private void save(String secret,String model)throws Exception{Cipher c=Cipher.getInstance("AES/GCM/NoPadding");c.init(Cipher.ENCRYPT_MODE,key());String encrypted=Base64.encodeToString(c.doFinal(secret.getBytes(StandardCharsets.UTF_8)),Base64.NO_WRAP),iv=Base64.encodeToString(c.getIV(),Base64.NO_WRAP);if(!prefs().edit().putString("encrypted",encrypted).putString("iv",iv).putString("model",model).commit())throw new IOException();}
  private String secret()throws Exception{if(!configured())throw new IllegalArgumentException("Connect your Gemini key in Profile first.");Cipher c=Cipher.getInstance("AES/GCM/NoPadding");c.init(Cipher.DECRYPT_MODE,key(),new GCMParameterSpec(128,Base64.decode(prefs().getString("iv",""),Base64.NO_WRAP)));return new String(c.doFinal(Base64.decode(prefs().getString("encrypted",""),Base64.NO_WRAP)),StandardCharsets.UTF_8);}
- boolean configured(){return prefs().contains("encrypted");}
+ boolean configured(){return prefs().contains("encrypted")&&prefs().contains("iv");}
  String model(){return prefs().getString("model",DEFAULT_MODEL);}
- void clear(){prefs().edit().clear().apply();try{KeyStore store=KeyStore.getInstance("AndroidKeyStore");store.load(null);store.deleteEntry(ALIAS);}catch(Exception ignored){}}
+ void clear()throws IOException{
+  // Report persistent removal failure instead of notifying JS that the key was removed.
+  if(!prefs().edit().clear().commit())throw new IOException("Could not remove the saved connection.");
+  // The encrypted secret is gone. A leftover non-exportable AES key cannot recover it.
+  try{KeyStore store=KeyStore.getInstance("AndroidKeyStore");store.load(null);store.deleteEntry(ALIAS);}catch(Exception ignored){}
+ }
+ static boolean validateSettings(String raw,String model,boolean hasSavedKey){
+  LocalStore.require(raw!=null&&model!=null,"Check the key and model ID.");
+  LocalStore.require(model.matches("gemini-[a-z0-9.-]{3,70}"),"Check the model ID.");
+  LocalStore.require(!raw.isEmpty()||hasSavedKey,"Enter a Gemini API key before saving.");
+  LocalStore.require(raw.isEmpty()||raw.matches("[A-Za-z0-9_-]{20,200}"),"Check the API key.");
+  return !raw.isEmpty();
+ }
+ private void updateSettings(String raw,String model)throws Exception{
+  if(validateSettings(raw,model,configured()))save(raw,model);
+  else if(!prefs().edit().putString("model",model).commit())throw new IOException("Could not save the model ID.");
+ }
  void configure(Runnable changed){
   LinearLayout box=new LinearLayout(activity);box.setOrientation(1);box.setPadding(40,10,40,10);TextView help=new TextView(activity);help.setText("Optional personal Gemini API connection. Enter your own restricted Google AI Studio key. It is encrypted on this phone and excluded from backups. Only meal text you approve is sent to Google. Your project may charge for requests; check its quota/billing. Do not distribute a shared API key in this app.");box.addView(help);
-  EditText input=new EditText(activity);input.setHint("Google AI Studio API key");input.setSingleLine(true);input.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);input.setImportantForAutofill(android.view.View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS);box.addView(input);
+  EditText input=new EditText(activity);input.setHint(configured()?"Leave blank to keep your saved key":"Google AI Studio API key");input.setSingleLine(true);input.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);input.setImportantForAutofill(android.view.View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS);box.addView(input);
   EditText model=new EditText(activity);model.setSingleLine(true);model.setHint("Model ID");model.setText(model());box.addView(model);
-  AlertDialog dialog=new AlertDialog.Builder(activity).setTitle("Connect Gemini").setView(box).setPositiveButton("Save",null).setNegativeButton("Cancel",(d,w)->input.setText("")).setNeutralButton("Remove key",(d,w)->{clear();input.setText("");changed.run();}).create();
-  dialog.setOnShowListener(v->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view->{String raw=input.getText().toString().trim(),m=model.getText().toString().trim();if(!raw.matches("[A-Za-z0-9_-]{20,200}")||!m.matches("gemini-[a-z0-9.-]{3,70}")){Toast.makeText(activity,"Check the key and model ID.",Toast.LENGTH_LONG).show();return;}try{save(raw,m);input.setText("");dialog.dismiss();changed.run();}catch(Exception e){Toast.makeText(activity,"Could not securely save this key.",Toast.LENGTH_LONG).show();}}));dialog.show();
+  AlertDialog dialog=new AlertDialog.Builder(activity).setTitle("Connect Gemini").setView(box).setPositiveButton("Save",null).setNegativeButton("Cancel",(d,w)->input.setText("")).setNeutralButton("Remove key",null).create();
+  dialog.setOnShowListener(v->{
+   dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view->{
+    String raw=input.getText().toString().trim(),m=model.getText().toString().trim();
+    try{updateSettings(raw,m);input.setText("");dialog.dismiss();changed.run();}
+    catch(IllegalArgumentException e){Toast.makeText(activity,e.getMessage(),Toast.LENGTH_LONG).show();}
+    catch(Exception e){Toast.makeText(activity,"Could not persist this connection. Retry before leaving settings.",Toast.LENGTH_LONG).show();}
+   });
+   dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(view->{
+    try{clear();input.setText("");dialog.dismiss();changed.run();}
+    catch(IOException e){Toast.makeText(activity,"Could not remove the saved connection. Retry before leaving settings.",Toast.LENGTH_LONG).show();}
+   });
+  });
+  dialog.setOnDismissListener(d->input.setText(""));
+  if(!activity.isFinishing()&&!activity.isDestroyed())dialog.show();
  }
  static JSONObject validate(JSONObject data)throws JSONException{
   JSONObject p=new JSONObject();Object recognized=data.opt("recognized");LocalStore.require(recognized instanceof Boolean,"Invalid AI response.");p.put("recognized",recognized);

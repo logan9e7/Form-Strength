@@ -10,10 +10,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
+import java.util.HashSet;
+import java.util.Set;
 
 /** App-private SQLite. No network, analytics, accounts or cloud backup. */
 final class LocalStore extends SQLiteOpenHelper {
-    LocalStore(Context context) { super(context, "form_strength.db", null, 4); }
+    LocalStore(Context context) { super(context, "form_strength.db", null, 5); }
     @Override public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE daily_logs (day TEXT PRIMARY KEY NOT NULL, payload TEXT NOT NULL)");
         db.execSQL("CREATE TABLE calorie_entries (id TEXT PRIMARY KEY NOT NULL, day TEXT NOT NULL, payload TEXT NOT NULL)");
@@ -26,9 +28,12 @@ final class LocalStore extends SQLiteOpenHelper {
         if(oldVersion<2)createPreferences(db);
         if(oldVersion<3)createActivities(db);
         if(oldVersion<4)createHealthCache(db);
+        if(oldVersion<5)createActivityIndex(db);
     }
     private static void createHealthCache(SQLiteDatabase db){db.execSQL("CREATE TABLE IF NOT EXISTS health_snapshots (id TEXT PRIMARY KEY NOT NULL, payload TEXT NOT NULL)");}
-    private static void createActivities(SQLiteDatabase db){db.execSQL("CREATE TABLE IF NOT EXISTS activity_entries (id TEXT PRIMARY KEY NOT NULL, day TEXT NOT NULL, payload TEXT NOT NULL)");}
+    private static void createActivities(SQLiteDatabase db){db.execSQL("CREATE TABLE IF NOT EXISTS activity_entries (id TEXT PRIMARY KEY NOT NULL, day TEXT NOT NULL, payload TEXT NOT NULL)");createActivityIndex(db);}
+    private static void createActivityIndex(SQLiteDatabase db){db.execSQL("CREATE INDEX IF NOT EXISTS activity_day ON activity_entries(day)");}
+    static final int MAX_SAVED_FOODS=1000;
     private static void createPreferences(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS preferences (id TEXT PRIMARY KEY NOT NULL, payload TEXT NOT NULL)");
         db.execSQL("CREATE TABLE IF NOT EXISTS saved_foods (id TEXT PRIMARY KEY NOT NULL, payload TEXT NOT NULL)");
@@ -154,8 +159,11 @@ final class LocalStore extends SQLiteOpenHelper {
             if(method.equals("GET"))return new JSONObject().put("foods",all("saved_foods"));
             require(body!=null&&body.length()<=20000,"Entry too large.");JSONObject d=new JSONObject(body);
             if(method.equals("DELETE")){getWritableDatabase().delete("saved_foods","id=?",new String[]{foodId(d)});return new JSONObject().put("ok",true);}
-            require(method.equals("PUT"),"Invalid operation.");JSONObject p=savedFood(d);JSONArray saved=all("saved_foods");boolean exists=false;for(int i=0;i<saved.length();i++)if(saved.getJSONObject(i).getString("id").equals(p.getString("id")))exists=true;require(exists||saved.length()<1000,"My foods is full (1000 foods). Remove a saved food first.");
-            putPayload(getWritableDatabase(),"saved_foods",p.getString("id"),p,SQLiteDatabase.CONFLICT_REPLACE);return new JSONObject().put("entry",p);
+            require(method.equals("PUT"),"Invalid operation.");JSONObject p=savedFood(d);SQLiteDatabase db=getWritableDatabase();
+            db.beginTransaction();try{
+                requireSavedFoodCapacity(rowCount(db,"saved_foods"),savedFoodExists(db,p.getString("id"))?0:1);
+                putPayload(db,"saved_foods",p.getString("id"),p,SQLiteDatabase.CONFLICT_REPLACE);db.setTransactionSuccessful();
+            }finally{db.endTransaction();}return new JSONObject().put("entry",p);
         }
         boolean isLog=path.equals("/api/logs");require(isLog||path.equals("/api/foods"),"Unknown operation.");
         if(method.equals("GET"))return new JSONObject().put(isLog?"logs":"entries",all(isLog?"daily_logs":"calorie_entries"));
@@ -184,21 +192,45 @@ final class LocalStore extends SQLiteOpenHelper {
         JSONArray validLogs=new JSONArray(),validFoods=new JSONArray();for(int i=0;i<logs.length();i++)validLogs.put(log(logs.getJSONObject(i)));for(int i=0;i<foods.length();i++)validFoods.put(food(foods.getJSONObject(i)));
         JSONObject valid=new JSONObject().put("logs",validLogs).put("foodEntries",validFoods);
         if(root.has("profile")){require(root.optJSONObject("profile")!=null,"Invalid profile.");valid.put("profile",profile(root.getJSONObject("profile")));}
-        if(root.has("savedFoods")){JSONArray foodsSaved=root.optJSONArray("savedFoods");require(foodsSaved!=null&&foodsSaved.length()<=1000,"Invalid saved foods.");JSONArray clean=new JSONArray();for(int i=0;i<foodsSaved.length();i++)clean.put(savedFood(foodsSaved.getJSONObject(i)));valid.put("savedFoods",clean);}
+        if(root.has("savedFoods")){JSONArray foodsSaved=root.optJSONArray("savedFoods");require(foodsSaved!=null&&foodsSaved.length()<=MAX_SAVED_FOODS,"Invalid saved foods.");JSONArray clean=new JSONArray();for(int i=0;i<foodsSaved.length();i++)clean.put(savedFood(foodsSaved.getJSONObject(i)));valid.put("savedFoods",clean);}
         if(root.has("activityEntries")){JSONArray entries=root.optJSONArray("activityEntries");require(entries!=null&&entries.length()<=10000,"Invalid activity entries.");JSONArray clean=new JSONArray();for(int i=0;i<entries.length();i++)clean.put(activity(entries.getJSONObject(i)));valid.put("activityEntries",clean);}
         return valid;
     }
+    // Count rows/IDs in SQL rather than parsing all stored JSON payloads merely to count them.
+    private static long rowCount(SQLiteDatabase db,String table){
+        require(table.equals("daily_logs")||table.equals("calorie_entries")||table.equals("saved_foods")||table.equals("activity_entries"),"Invalid records.");
+        try(Cursor c=db.rawQuery("SELECT COUNT(*) FROM "+table,null)){require(c.moveToFirst(),"Could not count records.");return c.getLong(0);}
+    }
+    private static long recordCount(SQLiteDatabase db){return rowCount(db,"daily_logs")+rowCount(db,"calorie_entries")+rowCount(db,"saved_foods")+rowCount(db,"activity_entries");}
+    private static boolean savedFoodExists(SQLiteDatabase db,String id){
+        try(Cursor c=db.query("saved_foods",new String[]{"id"},"id=?",new String[]{id},null,null,null,"1")){return c.moveToFirst();}
+    }
+    private static Set<String> savedFoodIds(SQLiteDatabase db){
+        Set<String> ids=new HashSet<>();try(Cursor c=db.query("saved_foods",new String[]{"id"},null,null,null,null,null)){while(c.moveToNext())ids.add(c.getString(0));}return ids;
+    }
+    static int newSavedFoodCount(JSONArray incoming,Set<String> existing)throws JSONException{
+        Set<String> added=new HashSet<>();for(int i=0;i<incoming.length();i++){String id=foodId(incoming.getJSONObject(i));if(!existing.contains(id))added.add(id);}return added.size();
+    }
+    static void requireSavedFoodCapacity(long existing,int additions){
+        require(existing>=0&&additions>=0,"Invalid saved food count.");
+        // Grandfather old over-limit databases: edits and duplicate-only restores still work.
+        require(additions==0||existing<=MAX_SAVED_FOODS-additions,"My foods is full (1000 foods). Remove saved foods before adding or importing new ones.");
+    }
     synchronized String importBackup(JSONObject backup) throws JSONException{
-        SQLiteDatabase db=getWritableDatabase();int before=all("daily_logs").length()+all("calorie_entries").length()+all("saved_foods").length()+all("activity_entries").length();db.beginTransaction();try{
+        SQLiteDatabase db=getWritableDatabase();long added;db.beginTransaction();try{
+            long before=recordCount(db);
+            JSONArray saved=backup.optJSONArray("savedFoods");require(!backup.has("savedFoods")||saved!=null,"Invalid saved foods.");
+            if(saved!=null)requireSavedFoodCapacity(rowCount(db,"saved_foods"),newSavedFoodCount(saved,savedFoodIds(db)));
+            // Preflight is inside this same transaction and before all writes, so overflow
+            // rejects the entire restore (including check-ins/profile), not a partial subset.
             JSONArray logs=backup.getJSONArray("logs"),foods=backup.getJSONArray("foodEntries");
             for(int i=0;i<logs.length();i++)putLog(db,logs.getJSONObject(i),SQLiteDatabase.CONFLICT_IGNORE);
             for(int i=0;i<foods.length();i++)putFood(db,foods.getJSONObject(i),SQLiteDatabase.CONFLICT_IGNORE);
-            if(backup.has("savedFoods")){JSONArray saved=backup.getJSONArray("savedFoods");for(int i=0;i<saved.length();i++){JSONObject p=saved.getJSONObject(i);putPayload(db,"saved_foods",p.getString("id"),p,SQLiteDatabase.CONFLICT_IGNORE);}}
+            if(saved!=null)for(int i=0;i<saved.length();i++){JSONObject p=saved.getJSONObject(i);putPayload(db,"saved_foods",p.getString("id"),p,SQLiteDatabase.CONFLICT_IGNORE);}
             if(backup.has("profile")&&!getProfile().optBoolean("completed",false))putPayload(db,"preferences","profile",backup.getJSONObject("profile"),SQLiteDatabase.CONFLICT_REPLACE);
             if(backup.has("activityEntries")){JSONArray entries=backup.getJSONArray("activityEntries");for(int i=0;i<entries.length();i++)putActivity(db,entries.getJSONObject(i),SQLiteDatabase.CONFLICT_IGNORE);}
-            db.setTransactionSuccessful();
+            added=recordCount(db)-before;db.setTransactionSuccessful();
         }finally{db.endTransaction();}
-        int added=all("daily_logs").length()+all("calorie_entries").length()+all("saved_foods").length()+all("activity_entries").length()-before;
         return "Imported "+added+" new entries. Existing entries were kept. Saved foods were merged; an existing completed profile was kept.";
     }
 }

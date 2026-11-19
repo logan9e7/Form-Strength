@@ -1,3 +1,13 @@
+# 1.6.3 — native reliability audit fixes
+
+- Isolate Health Connect framework classes behind an API34 guard and stop late callbacks.
+- Prepare/export/read/import backups on the worker executor. Keep pending export snapshots in app-private cache with a small saved-state token across picker recreation.
+- Harden AI confirmation/busy cleanup, native Back fallback and shutdown ordering.
+- Allow model-only Gemini changes; persist key removal before reporting success.
+- Schema5 adds an activity-date index; unique saved-food additions respect the 1,000-item cap inside import/save transactions.
+- Clean build intermediates, quote source paths and run D8 once. New backup/configuration/build contract tests.
+- Same package/signing identity; physical-device validation remains pending.
+
 # 1.6.2 — reviewed meal entry refinement
 
 - Reviewed PR #1: retain 16 supplemental references and product-label safeguards. Correct salad model, raw-corn label and cauliflower portion.

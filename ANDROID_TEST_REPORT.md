@@ -93,3 +93,9 @@ PASS: existing regression suites, syntax and DOM reference checks. Browser demo 
 
 ## 1.6.2 / PR #1 review
 Automated parser/nutrition/activity/health/API suites pass, including new supplemental quantities, whey label gate, true-zero creatine, corrected salad/corn portions. Native asset allowlist test covers every HTML script; supplement JS equals API JSON. API search/detail exposes new foods. Native JVM validation and signed Android compilation pass. Figma editable screen: https://www.figma.com/design/ep6tD2yuktlliMAoeCe71H (node 2:17); Roboto text, reusable rows, no flattened screen image. Browser manual checks include typed estimate, editable total, whey review, label fallback, saved meal and narrow/wide layouts. No phone/emulator attached: Android keyboard, notch, health sync and migration remain pending.
+
+## 1.6.3 native architecture audit fixes
+
+PASS: all six JavaScript/API regression suites; three JVM test entry points (backup snapshots/bounds/cleanup, SDK and Gemini configuration policy, native validation/import capacity); hermetic build contract including spaces, stale output cleanup and one D8 invocation. Signed Android compilation/resource/DEX packaging passed. APK version 1.6.3/code12 retains original signing certificate (SHA-256 afb0cda109180cd55a7283ca80ab4f0b4f8b8b1704ba35274c78bb69a6a52ae5). Source formatting check passed.
+
+Schema 5 adds the activity-day index without deleting data. The full finding-by-finding resolution is in docs/AUDIT_RESOLUTION_1.6.3.md. No physical device/emulator attached: actual upgrade/migration, picker process recreation, SQLite rollback, old-Android class loading, native Back/keyboard/notch, Keystore failures and live Health Connect/Gemini remain pending device QA. JVM tests do not constitute Android instrumentation.
