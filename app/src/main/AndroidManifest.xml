@@ -1,4 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.logan.formstrength" android:versionCode="12" android:versionName="1.6.3">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.logan.formstrength" android:versionCode="13" android:versionName="1.6.4">
  <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35"/>
  <uses-permission android:name="android.permission.INTERNET"/>
  <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED"/>
@@ -6,6 +6,15 @@
  <uses-permission android:name="android.permission.health.READ_STEPS"/>
  <uses-permission android:name="android.permission.health.READ_DISTANCE"/>
  <uses-permission android:name="android.permission.health.READ_SLEEP"/>
+ <!-- Scope visibility to Health Connect and apps declaring its privacy-policy entry points.
+      Arbitrary hidden data origins still display their exact package ID. -->
+ <queries>
+  <package android:name="com.google.android.apps.healthdata"/>
+  <intent><action android:name="android.health.connect.action.HEALTH_HOME_SETTINGS"/></intent>
+  <intent><action android:name="android.health.connect.action.MANAGE_HEALTH_PERMISSIONS"/></intent>
+  <intent><action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE"/></intent>
+  <intent><action android:name="android.intent.action.VIEW_PERMISSION_USAGE"/><category android:name="android.intent.category.HEALTH_PERMISSIONS"/></intent>
+ </queries>
  <application android:label="Form &amp; Strength" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:allowBackup="false" android:fullBackupContent="false" android:usesCleartextTraffic="false" android:supportsRtl="true" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:hardwareAccelerated="true">
   <activity android:name=".MainActivity" android:exported="true" android:windowSoftInputMode="adjustResize" android:configChanges="orientation|screenSize|keyboardHidden" android:enableOnBackInvokedCallback="true">
    <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>

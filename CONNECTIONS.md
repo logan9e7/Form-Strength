@@ -1,4 +1,4 @@
-# Optional connections — 1.6.3
+# Optional connections — 1.6.4
 
 ## Gemini meal estimates (personal-project connection)
 
@@ -39,3 +39,7 @@ No Gemini API key was supplied and no phone/emulator was attached. Native compil
 A saved Gemini key can be retained by leaving the key field blank when changing the model ID. First setup still requires a key. Removal waits for persistent preference deletion and reports failures. The Android Keystore key remains app-private and non-exportable; per-use device authentication is not required, and explicit meal-send consent remains mandatory.
 
 Health Connect platform symbols are isolated in an API34 helper behind an SDK-independent facade. Older Android releases receive explicit unsupported state; manual logging remains available. Source labels fall back to the precise package ID when Android package visibility prevents resolving a friendly name. No broad installed-app visibility permission is requested.
+
+## 1.6.4 recovery and visibility
+
+Saved ciphertext is structurally checked before configured status is shown. A model-only change verifies that the encrypted key can still be unlocked; missing/invalidated Keystore keys prompt removal and reconnection rather than generating a replacement on read. Activity destruction cancels the client's active connection and clears settings-dialog input. Scoped manifest queries cover Health Connect and clients exposing its documented privacy entry points; hidden origins retain their exact package ID. No broad package enumeration is requested.

@@ -1,3 +1,13 @@
+# 1.6.4 — audit follow-through
+
+- Keep API30 insets/system-bar and API33 Back symbols in guarded helper classes; older Health Connect calls now return unavailable without throwing. Add narrowly scoped Health Connect visibility queries while keeping exact package IDs for hidden origins.
+- Preserve pending import-picker state, honor an explicitly unhandled JavaScript Back event, and guard JavaScript delivery during shutdown. Cancel active Gemini work and dismiss its settings dialog when the activity closes.
+- Validate saved Gemini ciphertext/IV and require a usable existing key before a model-only change. Reading a lost key never generates a replacement; corrupt/invalidated keys prompt reconnection. Clear remains synchronous.
+- Abort failed SQLite writes instead of reporting partial success. Saved-food import probes only incoming unique IDs inside the transaction; backup validation enforces UTF-8 bytes as well as character bounds.
+- Add safe output-name and version guards, optional separate key password, ciphertext/UTF-8 regressions and host SQLite migration/index checks. Core architecture remains zero Gradle and zero third-party runtime dependencies.
+
+Device gates remain separate from host checks: API26–33 class loading, Android SQLiteOpenHelper upgrade, real picker recreation, system Back/insets, Keystore and live integrations still require observed Android results.
+
 # 1.6.3 — native reliability audit fixes
 
 - Isolate Health Connect framework classes behind an API34 guard and stop late callbacks.

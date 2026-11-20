@@ -38,3 +38,7 @@ while IFS= read -r test_class; do
  printf 'Running native test: %s\n' "$test_class"
  java -cp "build/test-classes:$JSON_JAR:$ANDROID_PLATFORM_JAR" "$test_class"
 done < build/test-main-classes.txt
+# Host-side SQL/build orchestration contracts complement JVM validation. They do
+# not emulate SQLiteOpenHelper, Android class loading or framework lifecycle.
+python3 tests/sqlite-migration.test.py
+python3 tests/build-contract.test.py

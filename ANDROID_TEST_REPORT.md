@@ -99,3 +99,30 @@ Automated parser/nutrition/activity/health/API suites pass, including new supple
 PASS: all six JavaScript/API regression suites; three JVM test entry points (backup snapshots/bounds/cleanup, SDK and Gemini configuration policy, native validation/import capacity); hermetic build contract including spaces, stale output cleanup and one D8 invocation. Signed Android compilation/resource/DEX packaging passed. APK version 1.6.3/code12 retains original signing certificate (SHA-256 afb0cda109180cd55a7283ca80ab4f0b4f8b8b1704ba35274c78bb69a6a52ae5). Source formatting check passed.
 
 Schema 5 adds the activity-day index without deleting data. The full finding-by-finding resolution is in docs/AUDIT_RESOLUTION_1.6.3.md. No physical device/emulator attached: actual upgrade/migration, picker process recreation, SQLite rollback, old-Android class loading, native Back/keyboard/notch, Keystore failures and live Health Connect/Gemini remain pending device QA. JVM tests do not constitute Android instrumentation.
+
+## 1.6.4 audit follow-up — 20 Nov 2026
+
+PASS (integrated source, all commands exit 0): `npm test` (six suites), `bash scripts/test-native.sh` (three JVM entry points plus host SQLite and hermetic build checks), and `bash scripts/build.sh` (unsigned 1.6.4/code13). Build emits two existing deprecation warnings for WebView file-origin security setters; no compile errors. Root's signed release gate is recorded separately after integration review.
+
+New assertions cover corrupt/empty/short/oversized encrypted-key state and IV length, model-only key retention policy, a raw Unicode backup below the character limit but above 5 MB UTF-8, and production activity-index SQL on a populated schema 4 table. Host build checks cover custom output basename, mismatched version guards, custom key alias and password environment references, path spaces, stale cleanup and one D8 call.
+
+Automated evidence is recorded separately from Android device acceptance. The native runner now includes host SQLite checks executing the production activity-table/index SQL, and hermetic build orchestration. These checks do not run Android SQLiteOpenHelper, framework class loading, permission UI, Keystore or Activity lifecycle.
+
+### Remaining Android release gates
+
+Use signed releases and a dedicated test device/profile with synthetic records. Record OS/API, APK version/code, exact steps, observed result and a reviewed, relevant logcat excerpt for failures. Do not record credentials or personal health data.
+
+| Gate | Execution and acceptance criteria | Status |
+| --- | --- | --- |
+| API 26–33 class loading | Launch the release, save food/activity offline, visit Device details and try sync/settings. Android 14+ requirement must appear without crash. | Pending Android target |
+| API 34+ upgrade | Install 1.6.2, seed meals/activities/check-in and export. Install current release over it without uninstall/clear. Compare IDs/values; directly inspect schema 4→5 and activity_day where test access permits. | Pending Android target |
+| Bounded backup round-trip | Export/import a valid backup near the 5 MB UTF-8 limit, with multi-byte text; confirm values and reject >5 MB. Rotate during preparation and system picker; repeat success and cancellation. | Pending Android target |
+| Picker recreation/process death | Enable Don't keep activities and verify actual destruction while picker foreground, then finish export. Separately kill background process (not force-stop), complete picker and confirm valid JSON; restore developer setting. | Pending Android target |
+| Back navigation | Clean modal Back closes only modal; dirty modal retains text on cancelled discard. Subtab Back reaches Home; Home Back finishes; relaunch retains records. Repeat with gesture Back on API 33+. | Pending Android target |
+| Gemini encrypted key/model-only | Enter a real key privately in native dialog; obtain an approved estimate. Reopen settings, leave key blank, change only accessible model ID; restart and obtain second estimate. Remove key and confirm restart shows unconfigured. Corrupt/invalidated-key failures must ask reconnect without exposing secret. | Pending real key and Android target |
+| Health Connect/cache revocation | On API 34+ grant read access and sync real synthetic provider records. Revoke one populated metric, resume/restart and verify no cached numeric value in Home/Device/Progress. Distinguish missing records from zero. | Pending Android target/provider |
+| Bars, cutout, IME and destruction | Inspect status/navigation contrast and safe areas on API 26/30/35, portrait/landscape, keyboard open/close and gesture/3-button navigation. Leave during AI/backup/health work; no crash or late UI delivery. | Pending Android target |
+
+No new Android runtime pass is claimed by this follow-up. Host compilation and pure policy tests do not establish that these release flows completed.
+
+Lead final gate: `npm test && bash scripts/test-native.sh && bash scripts/build.sh` completed with exit0 on the combined1.6.4 tree, using the original signing identity. All6 npm suites,3 JVM mains, host SQLite schema check and hermetic build check passed. Signed APK v1.6.4/code13 verified with v2/v3 signatures and original SHA-256 certificate `afb0cda109180cd55a7283ca80ab4f0b4f8b8b1704ba35274c78bb69a6a52ae5`. Exact concise output: docs/QA_GATE_1.6.4.txt. This does not change any pending Android acceptance row.

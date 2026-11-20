@@ -18,6 +18,18 @@ public final class HealthGeminiConfigurationTest {
   rejects(()->GeminiMealClient.validateSettings("","gemini-test-model",false),"first setup needs key");
   rejects(()->GeminiMealClient.validateSettings("","../other",true),"model path rejected");
   rejects(()->GeminiMealClient.validateSettings("bad key","gemini-test-model",true),"bad replacement rejected");
-  System.out.println("Passed SDK boundary/unsupported-state and Gemini model-only configuration policy.");
+  java.util.Base64.Encoder encoder=java.util.Base64.getEncoder();
+  String iv=encoder.encodeToString(new byte[12]),minimum=encoder.encodeToString(new byte[36]),maximum=encoder.encodeToString(new byte[216]);
+  check(GeminiMealClient.validEncryptedState(minimum,iv),"minimum encrypted key state");
+  check(GeminiMealClient.validEncryptedState(maximum,iv),"maximum encrypted key state");
+  check(!GeminiMealClient.validEncryptedState(null,iv),"missing ciphertext rejected");
+  check(!GeminiMealClient.validEncryptedState("",iv),"empty ciphertext rejected");
+  check(!GeminiMealClient.validEncryptedState("not base64!",iv),"corrupt ciphertext rejected");
+  check(!GeminiMealClient.validEncryptedState(encoder.encodeToString(new byte[35]),iv),"short ciphertext rejected");
+  check(!GeminiMealClient.validEncryptedState(encoder.encodeToString(new byte[217]),iv),"oversized ciphertext rejected");
+  check(!GeminiMealClient.validEncryptedState(minimum,encoder.encodeToString(new byte[11])),"wrong IV length rejected");
+  check(!GeminiMealClient.validEncryptedState(minimum,null),"missing IV rejected");
+  check(!GeminiMealClient.validEncryptedState(minimum,"?"),"corrupt IV rejected");
+  System.out.println("Passed SDK boundary/unsupported-state and Gemini model-only configuration and encrypted-state bounds.");
  }
 }

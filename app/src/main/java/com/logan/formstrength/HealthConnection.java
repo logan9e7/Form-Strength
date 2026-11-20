@@ -24,16 +24,16 @@ final class HealthConnection {
   return new HealthConnectionApi34(activity).status();
  }
  void connect(){
-  LocalStore.require(platformSupported(Build.VERSION.SDK_INT),"Device sync requires Android 14 or newer.");
+  if(!platformSupported(Build.VERSION.SDK_INT))return;
   new HealthConnectionApi34(activity).connect();
  }
  void settings(){
-  LocalStore.require(platformSupported(Build.VERSION.SDK_INT),"Device sync requires Android 14 or newer.");
+  if(!platformSupported(Build.VERSION.SDK_INT))return;
   new HealthConnectionApi34(activity).settings();
  }
  void read(String day,Result callback){
   if(!platformSupported(Build.VERSION.SDK_INT)){
-   try{callback.done(new JSONObject().put("supported",false).put("day",day).put("error","Device sync requires Android 14 or newer."));}catch(JSONException ignored){}
+   try{callback.done(unsupportedStatus().put("day",day).put("error","Device sync requires Android 14 or newer."));}catch(JSONException ignored){}
    return;
   }
   new HealthConnectionApi34(activity).read(day,callback);

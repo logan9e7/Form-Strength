@@ -45,7 +45,7 @@ final class LocalStore extends SQLiteOpenHelper {
         p.put("additional",Boolean.TRUE.equals(data.opt("additional")));p.put("description",text(data,"description",240,false)).put("code",text(data,"code",20,false)).put("source","Adult Compendium 2024 · MET estimate");return p;
     }
     private void putActivity(SQLiteDatabase db,JSONObject p,int conflict) throws JSONException {
-        ContentValues v=new ContentValues();v.put("id",p.getString("id"));v.put("day",p.getString("day"));v.put("payload",p.toString());db.insertWithOnConflict("activity_entries",null,v,conflict);
+        ContentValues v=new ContentValues();v.put("id",p.getString("id"));v.put("day",p.getString("day"));v.put("payload",p.toString());insertRecord(db,"activity_entries","id",p.getString("id"),v,conflict);
     }
     static JSONObject profile(JSONObject data) throws JSONException {
         JSONObject p=new JSONObject();p.put("name",text(data,"name",40,false));
@@ -113,10 +113,10 @@ final class LocalStore extends SQLiteOpenHelper {
         return p;
     }
     private void putLog(SQLiteDatabase db,JSONObject p,int conflict) throws JSONException{
-        ContentValues v=new ContentValues();v.put("day",p.getString("day"));v.put("payload",p.toString());db.insertWithOnConflict("daily_logs",null,v,conflict);
+        ContentValues v=new ContentValues();v.put("day",p.getString("day"));v.put("payload",p.toString());insertRecord(db,"daily_logs","day",p.getString("day"),v,conflict);
     }
     private void putFood(SQLiteDatabase db,JSONObject p,int conflict) throws JSONException{
-        ContentValues v=new ContentValues();v.put("id",p.getString("id"));v.put("day",p.getString("day"));v.put("payload",p.toString());db.insertWithOnConflict("calorie_entries",null,v,conflict);
+        ContentValues v=new ContentValues();v.put("id",p.getString("id"));v.put("day",p.getString("day"));v.put("payload",p.toString());insertRecord(db,"calorie_entries","id",p.getString("id"),v,conflict);
     }
     synchronized JSONArray all(String table) throws JSONException{
         require(table.equals("daily_logs")||table.equals("calorie_entries")||table.equals("saved_foods")||table.equals("activity_entries"),"Invalid records.");
@@ -180,13 +180,19 @@ final class LocalStore extends SQLiteOpenHelper {
     }
     private void putPayload(SQLiteDatabase db,String table,String id,JSONObject p,int conflict){
         ContentValues v=new ContentValues();v.put("id",id);v.put("payload",p.toString());
-        require(db.insertWithOnConflict(table,null,v,conflict)!=-1||conflict==SQLiteDatabase.CONFLICT_IGNORE,"Could not save record.");
+        insertRecord(db,table,"id",id,v,conflict);
+    }
+    private static void insertRecord(SQLiteDatabase db,String table,String key,String id,ContentValues values,int conflict){
+        long inserted=db.insertWithOnConflict(table,null,values,conflict);
+        // IGNORE may legitimately skip an existing ID; every other failed insert must
+        // abort the surrounding transaction instead of reporting a partial success.
+        if(inserted==-1){boolean duplicate=false;if(conflict==SQLiteDatabase.CONFLICT_IGNORE)try(Cursor c=db.query(table,new String[]{key},key+"=?",new String[]{id},null,null,null,"1")){duplicate=c.moveToFirst();}require(duplicate,"Could not save record.");}
     }
     private JSONObject getProfile() throws JSONException {
         try(Cursor c=getReadableDatabase().query("preferences",new String[]{"payload"},"id=?",new String[]{"profile"},null,null,null)) {return c.moveToFirst()?new JSONObject(c.getString(0)):new JSONObject();}
     }
     static JSONObject validateBackup(String raw) throws JSONException{
-        require(raw.length()<=5*1024*1024,"Backup is too large (maximum 5 MB).");JSONObject root=new JSONObject(raw);
+        require(raw!=null,"Choose a backup file.");require(raw.length()<=5*1024*1024&&raw.getBytes(java.nio.charset.StandardCharsets.UTF_8).length<=5*1024*1024,"Backup is too large (maximum 5 MB).");JSONObject root=new JSONObject(raw);
         JSONArray logs=root.optJSONArray("logs"),foods=root.optJSONArray("foodEntries");require(logs!=null&&foods!=null,"Choose a Form & Strength JSON export with check-ins and food entries.");
         require(logs.length()<=5000&&foods.length()<=10000,"Backup has too many entries.");
         JSONArray validLogs=new JSONArray(),validFoods=new JSONArray();for(int i=0;i<logs.length();i++)validLogs.put(log(logs.getJSONObject(i)));for(int i=0;i<foods.length();i++)validFoods.put(food(foods.getJSONObject(i)));
@@ -205,8 +211,11 @@ final class LocalStore extends SQLiteOpenHelper {
     private static boolean savedFoodExists(SQLiteDatabase db,String id){
         try(Cursor c=db.query("saved_foods",new String[]{"id"},"id=?",new String[]{id},null,null,null,"1")){return c.moveToFirst();}
     }
-    private static Set<String> savedFoodIds(SQLiteDatabase db){
-        Set<String> ids=new HashSet<>();try(Cursor c=db.query("saved_foods",new String[]{"id"},null,null,null,null,null)){while(c.moveToNext())ids.add(c.getString(0));}return ids;
+    private static int newSavedFoodCount(SQLiteDatabase db,JSONArray incoming)throws JSONException{
+        // Probe only incoming unique IDs through the primary key. A grandfathered
+        // overfull table must not require materializing every stored ID to restore.
+        Set<String> seen=new HashSet<>();int added=0;
+        for(int i=0;i<incoming.length();i++){String id=foodId(incoming.getJSONObject(i));if(seen.add(id)&&!savedFoodExists(db,id))added++;}return added;
     }
     static int newSavedFoodCount(JSONArray incoming,Set<String> existing)throws JSONException{
         Set<String> added=new HashSet<>();for(int i=0;i<incoming.length();i++){String id=foodId(incoming.getJSONObject(i));if(!existing.contains(id))added.add(id);}return added.size();
@@ -220,7 +229,7 @@ final class LocalStore extends SQLiteOpenHelper {
         SQLiteDatabase db=getWritableDatabase();long added;db.beginTransaction();try{
             long before=recordCount(db);
             JSONArray saved=backup.optJSONArray("savedFoods");require(!backup.has("savedFoods")||saved!=null,"Invalid saved foods.");
-            if(saved!=null)requireSavedFoodCapacity(rowCount(db,"saved_foods"),newSavedFoodCount(saved,savedFoodIds(db)));
+            if(saved!=null)requireSavedFoodCapacity(rowCount(db,"saved_foods"),newSavedFoodCount(db,saved));
             // Preflight is inside this same transaction and before all writes, so overflow
             // rejects the entire restore (including check-ins/profile), not a partial subset.
             JSONArray logs=backup.getJSONArray("logs"),foods=backup.getJSONArray("foodEntries");

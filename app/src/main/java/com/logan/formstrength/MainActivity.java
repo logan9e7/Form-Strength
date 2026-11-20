@@ -34,32 +34,18 @@ public final class MainActivity extends Activity {
     private static final String ORIGIN="https://appassets.androidplatform.net";
     private static final int EXPORT=201,IMPORT=202;
     private WebView web;private LocalStore store;private volatile String pendingExportName;private GeminiMealClient gemini;
-    private volatile boolean destroyed,pendingExportPicker;private boolean backPending;
+    private volatile boolean destroyed,pendingExportPicker,pendingImportPicker;private boolean backPending;
     private final java.util.concurrent.atomic.AtomicBoolean backupBusy=new java.util.concurrent.atomic.AtomicBoolean(false);
     private final ArrayList<AlertDialog> nativeDialogs=new ArrayList<>();
     private final java.util.concurrent.ExecutorService io=java.util.concurrent.Executors.newSingleThreadExecutor();
     private final java.util.concurrent.atomic.AtomicBoolean aiBusy=new java.util.concurrent.atomic.AtomicBoolean(false);
     @Override public void onCreate(Bundle state){
         super.onCreate(state);store=new LocalStore(this);gemini=new GeminiMealClient(this);
-        if(state!=null){String name=state.getString("pendingExportName");if(BackupFiles.validName(name)){pendingExportName=name;pendingExportPicker=true;backupBusy.set(true);}}
+        if(state!=null){String name=state.getString("pendingExportName");if(BackupFiles.validName(name)){pendingExportName=name;pendingExportPicker=true;backupBusy.set(true);}pendingImportPicker=state.getBoolean("pendingImportPicker",false);if(pendingImportPicker)backupBusy.set(true);}
         final String retained=pendingExportName;submitIo(()->BackupFiles.prune(backupDirectory(),retained,System.currentTimeMillis()));
         FrameLayout root=new FrameLayout(this);root.setBackgroundColor(Color.rgb(244,247,252));
         web=new WebView(this);web.setBackgroundColor(Color.rgb(244,247,252));root.addView(web,new FrameLayout.LayoutParams(-1,-1));setContentView(root);
-        getWindow().setStatusBarColor(Color.rgb(244,247,252));getWindow().setNavigationBarColor(Color.rgb(244,247,252));getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
-        if(Build.VERSION.SDK_INT>=30){
-            getWindow().setDecorFitsSystemWindows(false);
-            root.setOnApplyWindowInsetsListener((view,insets)->{
-                // The native shell owns safe-area padding. Do not dispatch those offsets
-                // again to WebView: modern WebView otherwise applies a second inset.
-                int handled=WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout()|WindowInsets.Type.ime();
-                android.graphics.Insets safe=insets.getInsets(handled);
-                view.setPadding(safe.left,safe.top,safe.right,safe.bottom);
-                return new WindowInsets.Builder(insets).setInsets(handled,android.graphics.Insets.NONE)
-                    .setInsetsIgnoringVisibility(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout(),android.graphics.Insets.NONE)
-                    .setDisplayCutout(null).build();
-            });
-            root.requestApplyInsets();
-        }
+        configureSystemBars(this,root);
         WebSettings settings=web.getSettings();settings.setJavaScriptEnabled(true);settings.setDomStorageEnabled(true);settings.setAllowFileAccess(false);settings.setAllowContentAccess(false);settings.setAllowFileAccessFromFileURLs(false);settings.setAllowUniversalAccessFromFileURLs(false);settings.setBlockNetworkLoads(true);settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);settings.setJavaScriptCanOpenWindowsAutomatically(false);settings.setSupportMultipleWindows(false);
         WebView.setWebContentsDebuggingEnabled(false);web.addJavascriptInterface(new Bridge(),"AndroidStore");
         web.setWebViewClient(new WebViewClient(){
@@ -79,8 +65,46 @@ public final class MainActivity extends Activity {
             @Override public boolean onJsAlert(WebView v,String url,String message,JsResult result){showJsDialog(message,result,false);return true;}
             @Override public boolean onJsConfirm(WebView v,String url,String message,JsResult result){showJsDialog(message,result,true);return true;}
         });
-        if(Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,()->handleBack());
+        if(Build.VERSION.SDK_INT>=33)Api33Navigation.register(this);
         web.loadUrl(ORIGIN+"/");
+    }
+    /** Keep newer framework symbols out of the API26-loaded shell's method bodies. */
+    static void configureSystemBars(Activity activity,View root){
+        if(Build.VERSION.SDK_INT>=30)Api30SystemBars.configure(activity,root);
+        else configureLegacySystemBars(activity);
+    }
+    @SuppressWarnings("deprecation")
+    private static void configureLegacySystemBars(Activity activity){
+        activity.getWindow().setStatusBarColor(Color.rgb(244,247,252));
+        activity.getWindow().setNavigationBarColor(Color.rgb(244,247,252));
+        activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+    }
+    @android.annotation.TargetApi(30)
+    private static final class Api30SystemBars {
+        @SuppressWarnings("deprecation")
+        static void configure(Activity activity,View root){
+            // API35 enforces edge-to-edge and ignores the deprecated bar colors.
+            if(Build.VERSION.SDK_INT<35){
+                activity.getWindow().setStatusBarColor(Color.rgb(244,247,252));
+                activity.getWindow().setNavigationBarColor(Color.rgb(244,247,252));
+                activity.getWindow().setDecorFitsSystemWindows(false);
+            }
+            android.view.WindowInsetsController controller=activity.getWindow().getInsetsController();
+            if(controller!=null){int light=android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS|android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;controller.setSystemBarsAppearance(light,light);}
+            root.setOnApplyWindowInsetsListener((view,insets)->{
+                int handled=WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout()|WindowInsets.Type.ime();
+                android.graphics.Insets safe=insets.getInsets(handled);
+                view.setPadding(safe.left,safe.top,safe.right,safe.bottom);
+                return new WindowInsets.Builder(insets).setInsets(handled,android.graphics.Insets.NONE)
+                    .setInsetsIgnoringVisibility(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout(),android.graphics.Insets.NONE)
+                    .setDisplayCutout(null).build();
+            });
+            root.requestApplyInsets();
+        }
+    }
+    @android.annotation.TargetApi(33)
+    private static final class Api33Navigation {
+        static void register(MainActivity activity){activity.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,activity::handleBack);}
     }
     private WebResourceResponse blocked(){return new WebResourceResponse("text/plain","UTF-8",403,"Forbidden",null,new ByteArrayInputStream(new byte[0]));}
     private boolean alive(){return !destroyed&&!isFinishing()&&!isDestroyed();}
@@ -100,11 +124,15 @@ public final class MainActivity extends Activity {
     }
     private void handleBack(){
         if(!alive()||backPending)return;if(web==null){finish();return;}backPending=true;
-        try{web.evaluateJavascript("(function(){try{if(typeof window.handleNativeBack==='function'){window.handleNativeBack();return true;}}catch(e){}return false;})()",result->{backPending=false;if(alive()&&!"true".equals(result))finish();});}
+        try{web.evaluateJavascript("(function(){try{if(typeof window.handleNativeBack==='function'){return window.handleNativeBack()!==false;}}catch(e){}return false;})()",result->{backPending=false;if(alive()&&!"true".equals(result))finish();});}
         catch(RuntimeException e){backPending=false;if(alive())finish();}
     }
     @Override public void onBackPressed(){handleBack();}
-    private void event(String message,boolean reload){runOnUiThread(()->{if(!alive()||web==null)return;try{JSONObject d=new JSONObject().put("message",message).put("reload",reload);web.evaluateJavascript("window.onNativeStatus && window.onNativeStatus("+d.toString()+")",null);}catch(Exception e){if(alive())Toast.makeText(this,message,Toast.LENGTH_LONG).show();}});}
+    private boolean deliverJs(String script){
+        if(!alive()||web==null)return false;
+        try{web.evaluateJavascript(script,null);return true;}catch(RuntimeException e){return false;}
+    }
+    private void event(String message,boolean reload){runOnUiThread(()->{if(!alive())return;try{JSONObject d=new JSONObject().put("message",message).put("reload",reload);if(!deliverJs("window.onNativeStatus && window.onNativeStatus("+d.toString()+")"))Toast.makeText(this,message,Toast.LENGTH_LONG).show();}catch(Exception e){if(alive())Toast.makeText(this,message,Toast.LENGTH_LONG).show();}});}
     private void clearPendingExport(String name){BackupFiles.delete(backupDirectory(),name);if(name!=null&&name.equals(pendingExportName)){pendingExportName=null;pendingExportPicker=false;}backupBusy.set(false);}
     private void launchExportPicker(String name){
         if(!alive())return;
@@ -112,7 +140,7 @@ public final class MainActivity extends Activity {
         try{startActivityForResult(i,EXPORT);pendingExportPicker=true;}catch(Exception e){submitIo(()->clearPendingExport(name));event("No file picker available.",false);}
     }
     public final class Bridge {
-        @JavascriptInterface public String request(String path,String method,String body){synchronized(store){try{if(destroyed)throw new IllegalStateException("Activity closed.");if(path.equals("/api/health-snapshots")){if(method.equals("DELETE")){store.clearHealthCache();return new JSONObject().put("ok",true).toString();}LocalStore.require(method.equals("GET"),"Read-only health cache.");JSONObject permissions=Build.VERSION.SDK_INT>=34?new HealthConnection(MainActivity.this).status():new JSONObject();return new JSONObject().put("entries",store.healthSnapshots(permissions)).toString();}return store.request(path,method,body).toString();}catch(Exception e){try{return new JSONObject().put("error",e instanceof IllegalArgumentException?e.getMessage():"Could not read or save this entry. Please check the fields and retry.").toString();}catch(Exception ignored){return "{\"error\":\"Storage error\"}";}}}}
+        @JavascriptInterface public String request(String path,String method,String body){synchronized(store){try{if(destroyed)throw new IllegalStateException("Activity closed.");if(path.equals("/api/health-snapshots")){if(method.equals("DELETE")){store.clearHealthCache();return new JSONObject().put("ok",true).toString();}LocalStore.require(method.equals("GET"),"Read-only health cache.");JSONObject permissions=new HealthConnection(MainActivity.this).status();return new JSONObject().put("entries",store.healthSnapshots(permissions)).toString();}return store.request(path,method,body).toString();}catch(Exception e){try{return new JSONObject().put("error",e instanceof IllegalArgumentException?e.getMessage():"Could not read or save this entry. Please check the fields and retry.").toString();}catch(Exception ignored){return "{\"error\":\"Storage error\"}";}}}}
         @JavascriptInterface public void exportBackup(String json){
             if(json==null||json.length()>BackupFiles.MAX_BYTES){event("Backup is too large to export.",false);return;}
             if(!backupBusy.compareAndSet(false,true)){event("A backup operation is already in progress.",false);return;}
@@ -122,12 +150,12 @@ public final class MainActivity extends Activity {
         }
         @JavascriptInterface public void importBackup(){
             if(!backupBusy.compareAndSet(false,true)){event("A backup operation is already in progress.",false);return;}
-            runOnUiThread(()->{if(!alive()){backupBusy.set(false);return;}Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*").putExtra(Intent.EXTRA_MIME_TYPES,new String[]{"application/json","text/plain","application/octet-stream"});try{startActivityForResult(i,IMPORT);}catch(Exception e){backupBusy.set(false);event("No file picker available.",false);}});
+            runOnUiThread(()->{if(!alive()){backupBusy.set(false);return;}Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*").putExtra(Intent.EXTRA_MIME_TYPES,new String[]{"application/json","text/plain","application/octet-stream"});try{startActivityForResult(i,IMPORT);pendingImportPicker=true;}catch(Exception e){pendingImportPicker=false;backupBusy.set(false);event("No file picker available.",false);}});
         }
-        @JavascriptInterface public String connectionStatus(){try{JSONObject out=new JSONObject().put("aiConfigured",gemini.configured()).put("model",gemini.model());JSONObject health=Build.VERSION.SDK_INT>=34?new HealthConnection(MainActivity.this).status():new JSONObject().put("supported",false);return out.put("health",health).toString();}catch(Exception e){return "{\"aiConfigured\":false,\"health\":{\"supported\":false}}";}}
+        @JavascriptInterface public String connectionStatus(){try{JSONObject out=new JSONObject().put("aiConfigured",gemini.configured()).put("model",gemini.model());JSONObject health=new HealthConnection(MainActivity.this).status();return out.put("health",health).toString();}catch(Exception e){return "{\"aiConfigured\":false,\"health\":{\"supported\":false}}";}}
         @JavascriptInterface public void configureGemini(){runOnUiThread(()->{if(alive())try{gemini.configure(()->sendJson("onConnectionChanged",new JSONObject()));}catch(RuntimeException e){event("Could not open Gemini settings. Reopen the app and retry.",false);}});}
         @JavascriptInterface public void connectHealth(){runOnUiThread(()->{if(!alive())return;if(Build.VERSION.SDK_INT>=34){try{new HealthConnection(MainActivity.this).connect();}catch(Exception e){event("Could not open Health Connect permissions. Check Android Settings.",false);}}else event("Device sync requires Android 14 or newer in this build.",false);});}
-        @JavascriptInterface public void healthSettings(){runOnUiThread(()->{if(!alive())return;if(Build.VERSION.SDK_INT>=34){try{new HealthConnection(MainActivity.this).settings();}catch(Exception e){event("Open Android Settings and search for Health Connect.",false);}}});}
+        @JavascriptInterface public void healthSettings(){runOnUiThread(()->{if(!alive())return;if(Build.VERSION.SDK_INT>=34){try{new HealthConnection(MainActivity.this).settings();}catch(Exception e){event("Open Android Settings and search for Health Connect.",false);}}else event("Device sync requires Android 14 or newer in this build.",false);});}
         @JavascriptInterface public void readHealth(String day,String id){
             if(id==null||!id.matches("[A-Za-z0-9-]{1,80}"))return;
             runOnUiThread(()->{if(!alive())return;if(Build.VERSION.SDK_INT<34){healthReply(id,"Device sync requires Android 14 or newer.");return;}
@@ -161,11 +189,11 @@ public final class MainActivity extends Activity {
         @JavascriptInterface public void exit(){runOnUiThread(()->{if(alive())finish();});}
     }
     @Override protected void onSaveInstanceState(Bundle state){
-        String name=pendingExportName;if(pendingExportPicker&&BackupFiles.validName(name))state.putString("pendingExportName",name);
+        String name=pendingExportName;if(pendingExportPicker&&BackupFiles.validName(name))state.putString("pendingExportName",name);state.putBoolean("pendingImportPicker",pendingImportPicker);
         super.onSaveInstanceState(state);
     }
     @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
-        super.onActivityResult(requestCode,resultCode,data);if(requestCode!=EXPORT&&requestCode!=IMPORT)return;
+        super.onActivityResult(requestCode,resultCode,data);if(requestCode!=EXPORT&&requestCode!=IMPORT)return;if(requestCode==IMPORT)pendingImportPicker=false;
         if(resultCode!=RESULT_OK||data==null||data.getData()==null){
             if(requestCode==EXPORT){String name=pendingExportName;if(!submitIo(()->clearPendingExport(name)))backupBusy.set(false);}else backupBusy.set(false);
             event("File selection cancelled. Your records are unchanged.",false);return;
@@ -199,13 +227,13 @@ public final class MainActivity extends Activity {
             showDialog(dialog,()->{if(!accepted.get())backupBusy.set(false);});
         }catch(Exception e){backupBusy.set(false);event("Could not show the import confirmation. Retry the import.",false);}
     }
-    private void sendJson(String function,JSONObject value){runOnUiThread(()->{if(alive()&&web!=null)web.evaluateJavascript("window."+function+" && window."+function+"("+value.toString()+")",null);});}
+    private void sendJson(String function,JSONObject value){runOnUiThread(()->deliverJs("window."+function+" && window."+function+"("+value.toString()+")"));}
     private void aiReply(String id,String error){try{sendJson("onAiResult",new JSONObject().put("requestId",id).put("error",error));}catch(Exception ignored){}}
     private void healthReply(String id,String error){try{sendJson("onHealthResult",new JSONObject().put("requestId",id).put("error",error));}catch(Exception ignored){}}
     @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results){super.onRequestPermissionsResult(requestCode,permissions,results);if(requestCode==303)sendJson("onConnectionChanged",new JSONObject());}
-    @Override protected void onResume(){super.onResume();if(alive()&&web!=null)web.evaluateJavascript("window.onNativeResume && window.onNativeResume()",null);}
+    @Override protected void onResume(){super.onResume();deliverJs("window.onNativeResume && window.onNativeResume()");}
     @Override protected void onDestroy(){
-        destroyed=true;aiBusy.set(false);backPending=false;
+        destroyed=true;aiBusy.set(false);backPending=false;gemini.cancel();
         for(AlertDialog dialog:new ArrayList<>(nativeDialogs))try{dialog.dismiss();}catch(RuntimeException ignored){}nativeDialogs.clear();
         if(web!=null){web.removeJavascriptInterface("AndroidStore");web.destroy();web=null;}
         // Drain already submitted work, then close under the same monitor used by bridge/cache access.

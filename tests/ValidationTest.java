@@ -71,6 +71,11 @@ public class ValidationTest {
   rejects(()->LocalStore.requireSavedFoodCapacity(999,2),"combined existing and imported rows obey cap");
   rejects(()->LocalStore.requireSavedFoodCapacity(1001,1),"legacy overfull library cannot grow");
   rejects(()->LocalStore.requireSavedFoodCapacity(-1,0),"invalid capacity input rejected");
+  rejects(()->LocalStore.validateBackup(null),"null backup rejected");
+  String unicodePadding=new String(new char[1800000]).replace('\0','\u20ac');
+  String oversizedUtf8="{\"logs\":[],\"foodEntries\":[],\"padding\":\""+unicodePadding+"\"}";
+  check(oversizedUtf8.length()<5*1024*1024,"UTF-8 test remains below character limit");
+  rejects(()->LocalStore.validateBackup(oversizedUtf8),"backup UTF-8 byte limit enforced before JSON import");
   System.out.println("Passed native validation: canonical fields, dates, ranges, fractions and backup validation.");
  }
 }

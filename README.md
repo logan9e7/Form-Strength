@@ -1,11 +1,11 @@
 # Form & Strength — offline Android companion
 
-**1.6.3 · version code 12**. Daily food, protein, water, habits and strength routines in an offline Android app. Bundled web UI inside an Android WebView; native SQLite stores all records. No app account, analytics or ads. Core logging works offline. Optional Gemini uses native HTTPS only after the user approves a meal; optional Health Connect reads supported device data.
+**1.6.4 · version code 13**. Daily food, protein, water, habits and strength routines in an offline Android app. Bundled web UI inside an Android WebView; native SQLite stores all records. No app account, analytics or ads. Core logging works offline. Optional Gemini uses native HTTPS only after the user approves a meal; optional Health Connect reads supported device data.
 
 ## Install as an update
 
 1. In the current app, use Profile → Backup & restore → Back up to a file. In older versions the backup button is directly in Profile.
-2. Download and open `Form-Strength-1.6.3.apk` on your Android phone. Tap **Update**, without uninstalling.
+2. Download and open `Form-Strength-1.6.4.apk` on your Android phone. Tap **Update**, without uninstalling.
 3. Open Profile to set your own starting measurements and optional goals. All fields are optional. Existing check-ins and meals remain intact.
 
 Application ID `com.logan.formstrength` and the original signing key are unchanged. Android 8.0+ with a current System WebView is supported by the build. Device installation and native runtime behavior remain unverified; see `ANDROID_TEST_REPORT.md`.
@@ -70,7 +70,7 @@ Official downloads:
 - https://repo.maven.apache.org/maven2/org/eclipse/jdt/ecj/3.40.0/ecj-3.40.0.jar
 - Native JVM validation also uses https://repo.maven.apache.org/maven2/org/json/json/20240303/json-20240303.jar
 
-Set `ANDROID_PLATFORM_JAR`, `ANDROID_BUILD_TOOLS`, `ECJ_JAR`. For the installable release also set `APK_KEYSTORE` and `APK_KEYSTORE_PASSWORD` securely; alias `form-strength`. Run `bash scripts/build.sh`. Never commit signing keys or passwords. Increment manifest version code/name and build output filename for each distributed release.
+Set `ANDROID_PLATFORM_JAR`, `ANDROID_BUILD_TOOLS`, `ECJ_JAR`. For the installable release also set `APK_KEYSTORE` and `APK_KEYSTORE_PASSWORD` securely; `APK_KEY_ALIAS` defaults to `form-strength`. `APK_KEY_PASSWORD` optionally supplies a separate private-key password and otherwise uses the store password. Run `bash scripts/build.sh`. Never commit signing keys or passwords. Increment manifest version code/name for each distributed release; output naming follows the manifest. Optional `APK_VERSION_NAME` / `APK_VERSION_CODE` guards must match it. `APK_OUTPUT_NAME` can select a safe `.apk` basename inside `outputs/`.
 
 Run `npm test` for parser/nutrition tests. Set `JSON_JAR`, `ANDROID_PLATFORM_JAR`, `ECJ_JAR` and run `bash scripts/test-native.sh` for JVM validation tests. These do not execute the Android SQLite engine or system UI.
 

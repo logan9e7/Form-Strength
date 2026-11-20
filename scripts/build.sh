@@ -13,19 +13,31 @@ a='{http://schemas.android.com/apk/res/android}'
 version=root.get(a+'versionName','')
 if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]{0,63}',version):
  raise SystemExit('Invalid Android versionName for release filename')
+code=root.get(a+'versionCode','')
+if not re.fullmatch(r'[1-9][0-9]{0,9}',code) or int(code)>2100000000:
+ raise SystemExit('Invalid Android versionCode for release')
 print(version)
+print(code)
 print(root.find('uses-sdk').get(a+'minSdkVersion'))
 PY
 )
-[[ ${#manifest_values[@]} == 2 ]] || { echo 'Could not read release metadata.' >&2; exit 1; }
+[[ ${#manifest_values[@]} == 3 ]] || { echo 'Could not read release metadata.' >&2; exit 1; }
+# Version metadata is owned by the manifest. Optional CI guards reject mismatched
+# release inputs instead of producing a filename that misrepresents the APK.
+[[ -z "${APK_VERSION_NAME:-}" || "$APK_VERSION_NAME" == "${manifest_values[0]}" ]] || { echo 'APK_VERSION_NAME does not match the manifest.' >&2; exit 1; }
+[[ -z "${APK_VERSION_CODE:-}" || "$APK_VERSION_CODE" == "${manifest_values[1]}" ]] || { echo 'APK_VERSION_CODE does not match the manifest.' >&2; exit 1; }
 release_name="Form-Strength-${manifest_values[0]}"
-min_api="${manifest_values[1]}"
+min_api="${manifest_values[2]}"
 [[ "$min_api" =~ ^[0-9]+$ ]] || { echo 'Invalid minimum API.' >&2; exit 1; }
 if [[ -n "${APK_KEYSTORE:-}" ]]; then
  : "${APK_KEYSTORE_PASSWORD:?Set signing password in environment}"
  release_path="outputs/$release_name.apk"
 else
  release_path="outputs/$release_name-unsigned.apk"
+fi
+if [[ -n "${APK_OUTPUT_NAME:-}" ]]; then
+ [[ "$APK_OUTPUT_NAME" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,120}\.apk$ ]] || { echo 'APK_OUTPUT_NAME must be an APK basename without directories.' >&2; exit 1; }
+ release_path="outputs/$APK_OUTPUT_NAME"
 fi
 export release_path
 python3 - <<'PY'
@@ -77,7 +89,9 @@ with zipfile.ZipFile('build/base.apk','a') as z:
 PY
 "$ANDROID_BUILD_TOOLS/zipalign" -f -p 4 build/base.apk build/aligned.apk
 if [[ -n "${APK_KEYSTORE:-}" ]]; then
- "$ANDROID_BUILD_TOOLS/apksigner" sign --ks "$APK_KEYSTORE" --ks-key-alias "${APK_KEY_ALIAS:-form-strength}" --ks-pass env:APK_KEYSTORE_PASSWORD --key-pass env:APK_KEYSTORE_PASSWORD --out build/release.apk build/aligned.apk
+ # A separate private-key password is optional; never expose either secret in argv.
+ export APK_KEY_PASSWORD="${APK_KEY_PASSWORD:-$APK_KEYSTORE_PASSWORD}"
+ "$ANDROID_BUILD_TOOLS/apksigner" sign --ks "$APK_KEYSTORE" --ks-key-alias "${APK_KEY_ALIAS:-form-strength}" --ks-pass env:APK_KEYSTORE_PASSWORD --key-pass env:APK_KEY_PASSWORD --out build/release.apk build/aligned.apk
  "$ANDROID_BUILD_TOOLS/apksigner" verify --verbose --print-certs build/release.apk
 else
  cp build/aligned.apk build/release.apk
