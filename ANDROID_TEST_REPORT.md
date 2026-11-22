@@ -126,3 +126,11 @@ Use signed releases and a dedicated test device/profile with synthetic records. 
 No new Android runtime pass is claimed by this follow-up. Host compilation and pure policy tests do not establish that these release flows completed.
 
 Lead final gate: `npm test && bash scripts/test-native.sh && bash scripts/build.sh` completed with exit0 on the combined1.6.4 tree, using the original signing identity. All6 npm suites,3 JVM mains, host SQLite schema check and hermetic build check passed. Signed APK v1.6.4/code13 verified with v2/v3 signatures and original SHA-256 certificate `afb0cda109180cd55a7283ca80ab4f0b4f8b8b1704ba35274c78bb69a6a52ae5`. Exact concise output: docs/QA_GATE_1.6.4.txt. This does not change any pending Android acceptance row.
+
+## 22 November2026: PDF iteration prerequisite
+
+Read the supplied two-page fitness sketch and recorded scope in docs/ITERATION_1_FROM_FITNESS_PDF.md. Account sign-in is excluded; onboarding remains local. Production iteration1 implementation is held behind the eight runtime gates at the user's request.
+
+The previous API34 software-emulator attempt reached adb online and later package-manager availability, but initial install failed while package service was absent and the next readiness attempt timed out. No instrumentation result or app-flow pass was produced. The prior emulator execution session is now unavailable; current adb probe lists no device. Sanitized evidence: docs/qa-evidence/2026-11-20-emulator-attempt.txt. All eight acceptance rows remain pending, with live-key/provider prerequisites unchanged.
+
+Added a framework-only, same-signer instrumentation APK harness under tests/android, built by scripts/build-os-qa.sh. It compiles separately against the unmodified release and introduces no production dependency or permission. Host npm/native regressions and test-APK compilation passed during preparation. Its seed/upgrade/capacity/backup/framework stages remain UNEXECUTED on Android. See docs/ANDROID_OS_QA.md; do not install the harness on a personal profile with a real Gemini key.

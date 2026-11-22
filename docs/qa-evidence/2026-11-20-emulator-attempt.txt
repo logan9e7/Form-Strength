@@ -1,0 +1,11 @@
+Observed API34 provisioning attempt, not an app test pass.
+Target: emulator-5554, sdk_phone64_x86_64 / emu64x
+Build: Android/sdk_phone64_x86_64/emu64x:14/UE1A.230829.036.A1/11228894:userdebug/test-keys
+Hardware acceleration: unavailable (/dev/kvm absent); software TCG used.
+Initial install: failed before production APK execution:
+  cmd: Can't find service: package
+  adb: failed to install outputs/Form-Strength-1.6.2.apk: cmd: Can't find service: package
+Second boot-completion/install attempt: TIMEOUT, no instrumentation result.
+Later diagnostic: Service package: found; system_server log showed first-boot dexopt.
+The old execution session is no longer available on22November. A fresh adb probe returned an empty device list.
+No production upgrade, backup, Keystore, Back, Health Connect or API26-33 gate passed in this attempt. No app crash is inferred from this boot/install failure.
