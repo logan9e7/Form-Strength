@@ -52,12 +52,18 @@ final class LocalStore extends SQLiteOpenHelper {
         String[] keys={"height","startingWeight","startingWaist","goalWeight","waterGoalMl","proteinGoalG"};
         double[] mins={80,30,40,30,0,0},maxes={250,250,200,250,10000,500};
         for(int i=0;i<keys.length;i++){String k=keys[i];if(data.has(k)&&!data.isNull(k)&&!"".equals(data.optString(k)))p.put(k,number(data,k,mins[i],maxes[i]));}
+        if(data.has("age")&&!data.isNull("age")&&!"".equals(data.optString("age"))){double age=number(data,"age",18,100);require(age==Math.rint(age),"Use a whole age.");p.put("age",age);}
+        if(data.has("goalMonths")&&!data.isNull("goalMonths")&&!"".equals(data.optString("goalMonths"))){double months=number(data,"goalMonths",1,36);require(months==Math.rint(months),"Use whole months.");p.put("goalMonths",months);}
+        for(String key:new String[]{"sex","goalMode","equipment"})if(data.has(key)&&!data.isNull(key)){String value=text(data,key,20,true);require(value.matches(key.equals("sex")?"female|male|unspecified":key.equals("goalMode")?"lose|maintain|gain":"bodyweight|dumbbells|gym"),"Check "+key+".");p.put(key,value);}
+        for(String key:new String[]{"cuisine","supplements"})if(data.has(key)&&!data.isNull(key))p.put(key,text(data,key,key.equals("cuisine")?80:120,false));
+        if(data.has("onboardingVersion")&&!data.isNull("onboardingVersion")){double version=number(data,"onboardingVersion",1,1);p.put("onboardingVersion",version);}
         p.put("completed",Boolean.TRUE.equals(data.opt("completed")));return p;
     }
     static JSONObject savedFood(JSONObject data) throws JSONException {
         JSONObject copy=new JSONObject(data.toString()).put("day","2000-01-01").put("meal","Snacks");
         JSONObject p=food(copy);p.remove("day");p.remove("meal");
-        p.put("favorite",Boolean.TRUE.equals(data.opt("favorite")));return p;
+        p.put("favorite",Boolean.TRUE.equals(data.opt("favorite")));
+        if(data.has("priceINR")&&!data.isNull("priceINR")&&!"".equals(data.optString("priceINR")))p.put("priceINR",number(data,"priceINR",0.01,10000));return p;
     }
     static void require(boolean condition, String message) { if (!condition) throw new IllegalArgumentException(message); }
     static String text(JSONObject data, String key, int max, boolean required) {
@@ -88,6 +94,7 @@ final class LocalStore extends SQLiteOpenHelper {
         JSONObject p=new JSONObject();p.put("day",day(data));
         String[] keys={"weight","waist","steps","sleep","waterMl"};double[] mins={30,40,0,0,0},maxes={250,200,100000,24,20000};
         for(int i=0;i<keys.length;i++){String k=keys[i];if(data.has(k)&&!data.isNull(k)&&!"".equals(data.optString(k)))p.put(k,number(data,k,mins[i],maxes[i]));}
+        for(String key:new String[]{"workoutActiveSeconds","workoutBreakSeconds"})if(data.has(key)&&!data.isNull(key)){double seconds=number(data,key,0,86400);require(seconds==Math.rint(seconds),"Use whole workout seconds.");p.put(key,seconds);}
         String[] checks={"workout","posture","walk","protein","vegetables","sugarFree","proteinShake"};
         for(String k:checks)p.put(k,Boolean.TRUE.equals(data.opt(k)));
         String session=text(data,"session",1,false);if(!session.matches("[ABC]"))session="A";
@@ -153,14 +160,18 @@ final class LocalStore extends SQLiteOpenHelper {
         if(path.equals("/api/profile")) {
             if(method.equals("GET"))return new JSONObject().put("profile",getProfile());
             require(method.equals("PUT"),"Invalid operation.");require(body!=null&&body.length()<=4000,"Profile too large.");
-            JSONObject p=profile(new JSONObject(body));putPayload(getWritableDatabase(),"preferences","profile",p,SQLiteDatabase.CONFLICT_REPLACE);return new JSONObject().put("profile",p);
+            JSONObject input=new JSONObject(body),previous=getProfile();
+            for(String key:new String[]{"age","sex","goalMode","goalMonths","cuisine","equipment","supplements","onboardingVersion"})if(!input.has(key)&&previous.has(key))input.put(key,previous.get(key));
+            JSONObject p=profile(input);putPayload(getWritableDatabase(),"preferences","profile",p,SQLiteDatabase.CONFLICT_REPLACE);return new JSONObject().put("profile",p);
         }
         if(path.equals("/api/saved-foods")) {
             if(method.equals("GET"))return new JSONObject().put("foods",all("saved_foods"));
             require(body!=null&&body.length()<=20000,"Entry too large.");JSONObject d=new JSONObject(body);
             if(method.equals("DELETE")){getWritableDatabase().delete("saved_foods","id=?",new String[]{foodId(d)});return new JSONObject().put("ok",true);}
-            require(method.equals("PUT"),"Invalid operation.");JSONObject p=savedFood(d);SQLiteDatabase db=getWritableDatabase();
-            db.beginTransaction();try{
+            require(method.equals("PUT"),"Invalid operation.");SQLiteDatabase db=getWritableDatabase();
+            // Older library editors do not expose cost; preserve it unless explicitly cleared.
+            if(!d.has("priceINR"))try(Cursor c=db.query("saved_foods",new String[]{"payload"},"id=?",new String[]{foodId(d)},null,null,null,"1")){if(c.moveToFirst()){JSONObject old=new JSONObject(c.getString(0));if(old.has("priceINR"))d.put("priceINR",old.get("priceINR"));}}
+            JSONObject p=savedFood(d);db.beginTransaction();try{
                 requireSavedFoodCapacity(rowCount(db,"saved_foods"),savedFoodExists(db,p.getString("id"))?0:1);
                 putPayload(db,"saved_foods",p.getString("id"),p,SQLiteDatabase.CONFLICT_REPLACE);db.setTransactionSuccessful();
             }finally{db.endTransaction();}return new JSONObject().put("entry",p);
@@ -174,9 +185,27 @@ final class LocalStore extends SQLiteOpenHelper {
             try(Cursor c=db.query("daily_logs",new String[]{"payload"},"day=?",new String[]{date},null,null,null)){if(c.moveToFirst())current=new JSONObject(c.getString(0));}
             JSONObject patched=patchLog(current,data);putLog(db,patched,SQLiteDatabase.CONFLICT_REPLACE);return new JSONObject().put("entry",patched);
         }
-        require(method.equals("PUT"),"Invalid operation.");JSONObject p=isLog?log(data):food(data);
+        require(method.equals("PUT"),"Invalid operation.");
+        if(isLog)try(Cursor c=db.query("daily_logs",new String[]{"payload"},"day=?",new String[]{day(data)},null,null,null,"1")){if(c.moveToFirst()){JSONObject old=new JSONObject(c.getString(0));for(String key:new String[]{"workoutActiveSeconds","workoutBreakSeconds"})if(!data.has(key)&&old.has(key))data.put(key,old.get(key));}}
+        JSONObject p=isLog?log(data):food(data);
         if(isLog)putLog(db,p,SQLiteDatabase.CONFLICT_REPLACE);else putFood(db,p,SQLiteDatabase.CONFLICT_REPLACE);
         return new JSONObject().put("ok",true).put("entry",p);
+    }
+    /** Notification actions share the same transaction as their bounded receipt. */
+    synchronized boolean applyReminderAction(String kind,String token,String date)throws JSONException{
+        require(kind.equals("water")||kind.equals("walk"),"Unknown reminder action.");
+        require(token!=null&&token.matches("[0-9]{10,17}-"+kind),"Invalid reminder action.");
+        String target=day(new JSONObject().put("day",date)),receipt="reminder-action-"+token;
+        SQLiteDatabase db=getWritableDatabase();db.beginTransaction();try{
+            try(Cursor c=db.query("preferences",new String[]{"id"},"id=?",new String[]{receipt},null,null,null,"1")){if(c.moveToFirst())return false;}
+            JSONObject current=new JSONObject().put("day",target);
+            try(Cursor c=db.query("daily_logs",new String[]{"payload"},"day=?",new String[]{target},null,null,null)){if(c.moveToFirst())current=new JSONObject(c.getString(0));}
+            if(kind.equals("water"))current.put("waterMl",Math.min(20000,current.optDouble("waterMl",0)+250));else current.put("walk",true);
+            putLog(db,log(current),SQLiteDatabase.CONFLICT_REPLACE);
+            putPayload(db,"preferences",receipt,new JSONObject().put("day",target).put("kind",kind),SQLiteDatabase.CONFLICT_ABORT);
+            db.execSQL("DELETE FROM preferences WHERE id IN (SELECT id FROM preferences WHERE id LIKE 'reminder-action-%' ORDER BY id DESC LIMIT -1 OFFSET 256)");
+            db.setTransactionSuccessful();return true;
+        }finally{db.endTransaction();}
     }
     private void putPayload(SQLiteDatabase db,String table,String id,JSONObject p,int conflict){
         ContentValues v=new ContentValues();v.put("id",id);v.put("payload",p.toString());

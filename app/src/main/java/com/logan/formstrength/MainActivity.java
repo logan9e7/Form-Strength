@@ -32,7 +32,8 @@ import java.util.Locale;
 /** Android shell for bundled offline UI, native SQLite and system document backup. */
 public final class MainActivity extends Activity {
     private static final String ORIGIN="https://appassets.androidplatform.net";
-    private static final int EXPORT=201,IMPORT=202;
+    private static final int EXPORT=201,IMPORT=202,CAMERA_MEAL=204;
+    private String cameraName,cameraRequest;private boolean cameraPicker,pageReady,restoredCapture;private JSONObject deferredCameraResult;
     private WebView web;private LocalStore store;private volatile String pendingExportName;private GeminiMealClient gemini;
     private volatile boolean destroyed,pendingExportPicker,pendingImportPicker;private boolean backPending;
     private final java.util.concurrent.atomic.AtomicBoolean backupBusy=new java.util.concurrent.atomic.AtomicBoolean(false);
@@ -42,6 +43,8 @@ public final class MainActivity extends Activity {
     @Override public void onCreate(Bundle state){
         super.onCreate(state);store=new LocalStore(this);gemini=new GeminiMealClient(this);
         if(state!=null){String name=state.getString("pendingExportName");if(BackupFiles.validName(name)){pendingExportName=name;pendingExportPicker=true;backupBusy.set(true);}pendingImportPicker=state.getBoolean("pendingImportPicker",false);if(pendingImportPicker)backupBusy.set(true);}
+        if(state!=null){String photo=state.getString("cameraName"),request=state.getString("cameraRequest");if(MealPhotoProvider.validName(photo)&&request!=null&&request.matches("[A-Za-z0-9-]{1,80}")){cameraName=photo;cameraRequest=request;cameraPicker=true;restoredCapture=true;aiBusy.set(true);}}
+        final String retainedPhoto=cameraName;submitIo(()->MealPhotoProvider.prune(this,retainedPhoto));
         final String retained=pendingExportName;submitIo(()->BackupFiles.prune(backupDirectory(),retained,System.currentTimeMillis()));
         FrameLayout root=new FrameLayout(this);root.setBackgroundColor(Color.rgb(244,247,252));
         web=new WebView(this);web.setBackgroundColor(Color.rgb(244,247,252));root.addView(web,new FrameLayout.LayoutParams(-1,-1));setContentView(root);
@@ -49,11 +52,12 @@ public final class MainActivity extends Activity {
         WebSettings settings=web.getSettings();settings.setJavaScriptEnabled(true);settings.setDomStorageEnabled(true);settings.setAllowFileAccess(false);settings.setAllowContentAccess(false);settings.setAllowFileAccessFromFileURLs(false);settings.setAllowUniversalAccessFromFileURLs(false);settings.setBlockNetworkLoads(true);settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);settings.setJavaScriptCanOpenWindowsAutomatically(false);settings.setSupportMultipleWindows(false);
         WebView.setWebContentsDebuggingEnabled(false);web.addJavascriptInterface(new Bridge(),"AndroidStore");
         web.setWebViewClient(new WebViewClient(){
+            @Override public void onPageFinished(WebView view,String url){pageReady=true;if(deferredCameraResult!=null){JSONObject value=deferredCameraResult;deferredCameraResult=null;sendJson("onCameraMealResult",value);}}
             @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){
                 Uri u=request.getUrl();String path=u.getPath();
                 if(!"https".equals(u.getScheme())||!"appassets.androidplatform.net".equals(u.getHost())||path==null)return blocked();
                 if(path.equals("/"))path="/index.html";
-                if(!path.matches("/(index\\.html|app\\.js|training\\.js|food-diary\\.js|progress\\.js|tracker-core\\.js|profile\\.js|habits\\.js|saved-foods\\.js|startup\\.js|activities\\.js|activity-estimator\\.js|health-core\\.js|health-sync\\.js|day-context\\.js|connections\\.js|food-reference\\.js|food-supplements\\.js|meal-estimator\\.js|app\\.css|theme\\.css|icon-192\\.png|icon-512\\.png)"))return blocked();
+                if(!path.matches("/(index\\.html|iterations\\.js|app\\.js|training\\.js|food-diary\\.js|progress\\.js|tracker-core\\.js|profile\\.js|habits\\.js|saved-foods\\.js|startup\\.js|activities\\.js|activity-estimator\\.js|health-core\\.js|health-sync\\.js|day-context\\.js|connections\\.js|food-reference\\.js|food-supplements\\.js|meal-estimator\\.js|app\\.css|theme\\.css|icon-192\\.png|icon-512\\.png)"))return blocked();
                 try{String type=path.endsWith(".js")?"text/javascript":path.endsWith(".css")?"text/css":path.endsWith(".png")?"image/png":"text/html";
                     HashMap<String,String> headers=new HashMap<>();headers.put("Content-Security-Policy","default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'");headers.put("X-Content-Type-Options","nosniff");
                     return new WebResourceResponse(type,"UTF-8",200,"OK",headers,getAssets().open(path.substring(1)));
@@ -139,7 +143,32 @@ public final class MainActivity extends Activity {
         Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("application/json").putExtra(Intent.EXTRA_TITLE,"form-strength-backup-"+new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(new java.util.Date())+".json");
         try{startActivityForResult(i,EXPORT);pendingExportPicker=true;}catch(Exception e){submitIo(()->clearPendingExport(name));event("No file picker available.",false);}
     }
+    private void cameraReply(String request,String error){try{cameraResult(new JSONObject().put("requestId",request).put("error",error));}catch(Exception ignored){}}
+    private void cameraResult(JSONObject value){runOnUiThread(()->{if(!alive())return;if(pageReady)sendJson("onCameraMealResult",value);else deferredCameraResult=value;});}
+    private void releaseCamera(String name){try{if(MealPhotoProvider.validName(name))revokeUriPermission(MealPhotoProvider.uri(name),Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION);}catch(RuntimeException ignored){}MealPhotoProvider.remove(this,name);if(name!=null&&name.equals(cameraName)){cameraName=null;cameraRequest=null;cameraPicker=false;}}
+    private void launchCamera(String name,String request){
+        if(!alive()){releaseCamera(name);aiBusy.set(false);return;}
+        try{Uri uri=MealPhotoProvider.uri(name);Intent capture=new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE).putExtra(android.provider.MediaStore.EXTRA_OUTPUT,uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION);capture.setClipData(android.content.ClipData.newRawUri("Meal photo",uri));startActivityForResult(capture,CAMERA_MEAL);cameraPicker=true;}
+        catch(RuntimeException e){releaseCamera(name);aiBusy.set(false);cameraReply(request,"No camera app is available. Type your meal instead.");}
+    }
+    private void confirmPhoto(byte[] jpeg,String request){
+        if(!alive()){aiBusy.set(false);return;}java.util.concurrent.atomic.AtomicBoolean sent=new java.util.concurrent.atomic.AtomicBoolean(false);
+        try{AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Send this meal photo to Gemini?").setMessage("A resized photo, with location metadata removed, will be sent to Google's Gemini API using your key. Check that no faces or private information are visible. Your diary and Health Connect records are not sent. API charges and quotas depend on your project. Estimates need your portion review; nothing is logged automatically.").setPositiveButton("Send photo",(d,w)->{sent.set(true);if(!submitIo(()->{try{if(destroyed)return;JSONObject result=gemini.estimateImage(jpeg);result.put("requestId",request);cameraResult(result);}catch(Exception e){cameraReply(request,e instanceof IllegalArgumentException?e.getMessage():"Could not estimate this photo. Check your connection or type the meal.");}finally{java.util.Arrays.fill(jpeg,(byte)0);aiBusy.set(false);}})){java.util.Arrays.fill(jpeg,(byte)0);aiBusy.set(false);cameraReply(request,"Photo request interrupted. Retake the photo.");}}).setNegativeButton("Cancel",null).create();
+        showDialog(dialog,()->{if(!sent.get()){java.util.Arrays.fill(jpeg,(byte)0);aiBusy.set(false);cameraReply(request,"Photo cancelled. Nothing was sent or logged.");}});
+        }catch(RuntimeException e){java.util.Arrays.fill(jpeg,(byte)0);aiBusy.set(false);cameraReply(request,"Could not open photo consent. Nothing was sent.");}
+    }
     public final class Bridge {
+        @JavascriptInterface public void captureMeal(String request){
+            if(request==null||!request.matches("[A-Za-z0-9-]{1,80}")||destroyed)return;
+            if(!gemini.configured()){cameraReply(request,"Set up your Gemini key in You settings before estimating a photo.");return;}
+            if(!aiBusy.compareAndSet(false,true)){cameraReply(request,"An AI or camera request is already in progress.");return;}
+            final String name="meal-"+UUID.randomUUID().toString()+".jpg";cameraName=name;cameraRequest=request;
+            if(!submitIo(()->{try{MealPhotoProvider.prepare(MainActivity.this,name);runOnUiThread(()->launchCamera(name,request));}catch(Exception e){releaseCamera(name);aiBusy.set(false);cameraReply(request,"Could not prepare the camera. Check free storage and retry.");}})){aiBusy.set(false);releaseCamera(name);cameraReply(request,"Camera interrupted. Reopen the app and retry.");}
+        }
+        @JavascriptInterface public String reminderStatus(){return ReminderScheduler.status(MainActivity.this).toString();}
+        @JavascriptInterface public String consumeLaunchDestination(){synchronized(MainActivity.this){Intent intent=getIntent();if(intent!=null&&intent.getBooleanExtra("openYou",false)){intent.removeExtra("openYou");return "you";}return "";}}
+        @JavascriptInterface public void configureReminders(boolean water,boolean walk,boolean windup){if(!submitIo(()->{try{ReminderScheduler.configure(MainActivity.this,water,walk,windup);runOnUiThread(()->{if(!alive())return;if(Build.VERSION.SDK_INT>=33&&checkSelfPermission("android.permission.POST_NOTIFICATIONS")!=android.content.pm.PackageManager.PERMISSION_GRANTED&&(water||walk||windup))requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"},305);sendJson("onReminderSettings",ReminderScheduler.status(MainActivity.this));});}catch(RuntimeException e){event("Could not update reminders. Check notification settings.",false);}}))event("Reminder settings interrupted. Reopen and retry.",false);}
+
         @JavascriptInterface public String request(String path,String method,String body){synchronized(store){try{if(destroyed)throw new IllegalStateException("Activity closed.");if(path.equals("/api/health-snapshots")){if(method.equals("DELETE")){store.clearHealthCache();return new JSONObject().put("ok",true).toString();}LocalStore.require(method.equals("GET"),"Read-only health cache.");JSONObject permissions=new HealthConnection(MainActivity.this).status();return new JSONObject().put("entries",store.healthSnapshots(permissions)).toString();}return store.request(path,method,body).toString();}catch(Exception e){try{return new JSONObject().put("error",e instanceof IllegalArgumentException?e.getMessage():"Could not read or save this entry. Please check the fields and retry.").toString();}catch(Exception ignored){return "{\"error\":\"Storage error\"}";}}}}
         @JavascriptInterface public void exportBackup(String json){
             if(json==null||json.length()>BackupFiles.MAX_BYTES){event("Backup is too large to export.",false);return;}
@@ -190,10 +219,15 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onSaveInstanceState(Bundle state){
         String name=pendingExportName;if(pendingExportPicker&&BackupFiles.validName(name))state.putString("pendingExportName",name);state.putBoolean("pendingImportPicker",pendingImportPicker);
+        if(cameraPicker&&MealPhotoProvider.validName(cameraName)){state.putString("cameraName",cameraName);state.putString("cameraRequest",cameraRequest);}
         super.onSaveInstanceState(state);
     }
     @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
-        super.onActivityResult(requestCode,resultCode,data);if(requestCode!=EXPORT&&requestCode!=IMPORT)return;if(requestCode==IMPORT)pendingImportPicker=false;
+        super.onActivityResult(requestCode,resultCode,data);
+        if(requestCode==CAMERA_MEAL){final String name=cameraName,request=cameraRequest;cameraPicker=false;if(restoredCapture){restoredCapture=false;releaseCamera(name);aiBusy.set(false);cameraReply(request,"The app restarted while the camera was open. Nothing was sent or logged. Please reopen the meal form and retake the photo.");return;}if(resultCode!=RESULT_OK||!MealPhotoProvider.validName(name)){releaseCamera(name);aiBusy.set(false);cameraReply(request,"Camera cancelled. Nothing was sent or logged.");return;}
+            try{revokeUriPermission(MealPhotoProvider.uri(name),Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION);}catch(RuntimeException ignored){}
+            if(!submitIo(()->{try{byte[] jpeg=MealPhotoProvider.image(this,name);runOnUiThread(()->confirmPhoto(jpeg,request));}catch(Exception e){aiBusy.set(false);cameraReply(request,e.getMessage()==null?"Could not read the photo. Retake it.":e.getMessage());}finally{releaseCamera(name);}})){releaseCamera(name);aiBusy.set(false);cameraReply(request,"Photo interrupted. Retake it.");}return;}
+        if(requestCode!=EXPORT&&requestCode!=IMPORT)return;if(requestCode==IMPORT)pendingImportPicker=false;
         if(resultCode!=RESULT_OK||data==null||data.getData()==null){
             if(requestCode==EXPORT){String name=pendingExportName;if(!submitIo(()->clearPendingExport(name)))backupBusy.set(false);}else backupBusy.set(false);
             event("File selection cancelled. Your records are unchanged.",false);return;
@@ -230,7 +264,8 @@ public final class MainActivity extends Activity {
     private void sendJson(String function,JSONObject value){runOnUiThread(()->deliverJs("window."+function+" && window."+function+"("+value.toString()+")"));}
     private void aiReply(String id,String error){try{sendJson("onAiResult",new JSONObject().put("requestId",id).put("error",error));}catch(Exception ignored){}}
     private void healthReply(String id,String error){try{sendJson("onHealthResult",new JSONObject().put("requestId",id).put("error",error));}catch(Exception ignored){}}
-    @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results){super.onRequestPermissionsResult(requestCode,permissions,results);if(requestCode==303)sendJson("onConnectionChanged",new JSONObject());}
+    @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results){super.onRequestPermissionsResult(requestCode,permissions,results);if(requestCode==303)sendJson("onConnectionChanged",new JSONObject());if(requestCode==305)sendJson("onReminderSettings",ReminderScheduler.status(this));}
+    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);synchronized(this){setIntent(intent);}deliverJs("window.onNativeResume && window.onNativeResume()");deliverJs("window.onIterationDestination && window.onIterationDestination()");}
     @Override protected void onResume(){super.onResume();deliverJs("window.onNativeResume && window.onNativeResume()");}
     @Override protected void onDestroy(){
         destroyed=true;aiBusy.set(false);backPending=false;gemini.cancel();

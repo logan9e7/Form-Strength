@@ -1,3 +1,5 @@
+> Superseded implementation status,22November2026: the user subsequently requested all three slices and an APK despite pending device gates. Code is implemented in1.7.0; Android acceptance remains pending. The following records the original scope and prerequisite.
+
 # Fitness PDF: iteration boundaries and acceptance
 
 Source: user-supplied fitness.pdf, two handwritten pages, visually reviewed 22 November2026. The user's accompanying instructions override the sketch's Account Sign-in box. This is a source-to-implementation specification, not evidence that features are implemented.

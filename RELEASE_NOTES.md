@@ -1,3 +1,14 @@
+# 1.7.0 — three PDF iterations
+
+- New Daily Goal home, local-only onboarding with optional resting estimate, Workout/Food transitions, top Back and You review/settings.
+- Guided workout player, immediate equipment alternatives, active/break timers, pause on background and saved session timing.
+- Opt-in native water/walk/wind-up channels and inexact scheduling; Android13+ permission; duplicate-safe local log actions; wind-up opens You.
+- Secure camera capture, bounded EXIF-normalized metadata-free image, explicit Gemini sharing consent and editable meal review. Interrupted/restored camera requires retake.
+- User-entered INR serving prices and cost/protein-value budget filtering with unknown nutrients kept unknown.
+- Existing SQLite schema5/data/signing identity retained; old editors preserve optional profile, price and timing fields. No sign-in or production dependency added.
+
+Implementation is available for device QA. Prior eight Android acceptance gates remain unpassed; no live camera, Gemini, permission delivery, reboot alarm or real Health Connect success is claimed.
+
 # 1.6.4 — audit follow-through
 
 - Keep API30 insets/system-bar and API33 Back symbols in guarded helper classes; older Health Connect calls now return unavailable without throwing. Add narrowly scoped Health Connect visibility queries while keeping exact package IDs for hidden origins.

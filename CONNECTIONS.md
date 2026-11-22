@@ -1,4 +1,4 @@
-# Optional connections — 1.6.4
+# Optional connections — 1.7.0
 
 ## Gemini meal estimates (personal-project connection)
 
@@ -43,3 +43,9 @@ Health Connect platform symbols are isolated in an API34 helper behind an SDK-in
 ## 1.6.4 recovery and visibility
 
 Saved ciphertext is structurally checked before configured status is shown. A model-only change verifies that the encrypted key can still be unlocked; missing/invalidated Keystore keys prompt removal and reconnection rather than generating a replacement on read. Activity destruction cancels the client's active connection and clears settings-dialog input. Scoped manifest queries cover Health Connect and clients exposing its documented privacy entry points; hidden origins retain their exact package ID. No broad package enumeration is requested.
+
+## Meal photos and reminders
+
+Optional camera capture uses the installed Android camera with a one-file URI grant. The original stays in private cache, is normalized/resized/re-encoded without original EXIF/GPS and removed after preparation/cancellation; abandoned captures expire after24h. Only a JPEG up to512KB is sent after explicit native consent using the user's encrypted Gemini key. Health data and the diary are not part of that request. Photo estimates need ingredient/portion review; they never save automatically. Recreated camera sessions cancel and ask for a retake.
+
+Native reminder channels follow system DND. Permission is requested only after user configures reminders; alarm delivery is inexact and depends on Android power settings. No exact-alarm or notification-policy access is requested. Notification log actions are explicit one-shot, locally deduplicated updates.

@@ -1,11 +1,11 @@
 # Form & Strength — offline Android companion
 
-**1.6.4 · version code 13**. Daily food, protein, water, habits and strength routines in an offline Android app. Bundled web UI inside an Android WebView; native SQLite stores all records. No app account, analytics or ads. Core logging works offline. Optional Gemini uses native HTTPS only after the user approves a meal; optional Health Connect reads supported device data.
+**1.7.0 · version code 14**. Daily food, protein, water, habits and strength routines in an offline Android app. Bundled web UI inside an Android WebView; native SQLite stores all records. No app account, analytics or ads. Core logging works offline. Optional Gemini uses native HTTPS only after the user approves a meal; optional Health Connect reads supported device data.
 
 ## Install as an update
 
 1. In the current app, use Profile → Backup & restore → Back up to a file. In older versions the backup button is directly in Profile.
-2. Download and open `Form-Strength-1.6.4.apk` on your Android phone. Tap **Update**, without uninstalling.
+2. Download and open `Form-Strength-1.7.0.apk` on your Android phone. Tap **Update**, without uninstalling.
 3. Open Profile to set your own starting measurements and optional goals. All fields are optional. Existing check-ins and meals remain intact.
 
 Application ID `com.logan.formstrength` and the original signing key are unchanged. Android 8.0+ with a current System WebView is supported by the build. Device installation and native runtime behavior remain unverified; see `ANDROID_TEST_REPORT.md`.
@@ -75,3 +75,15 @@ Set `ANDROID_PLATFORM_JAR`, `ANDROID_BUILD_TOOLS`, `ECJ_JAR`. For the installabl
 Run `npm test` for parser/nutrition tests. Set `JSON_JAR`, `ANDROID_PLATFORM_JAR`, `ECJ_JAR` and run `bash scripts/test-native.sh` for JVM validation tests. These do not execute the Android SQLite engine or system UI.
 
 `npm run dev` starts a disposable browser preview. Its mock bridge stores demonstration records in browser localStorage, separately from the phone's database. It is not packaged in the APK. `/__phone?width=390` wraps the UI at a mobile width. Native import and Back/lifecycle tests require Android.
+
+## PDF feature iterations (1.7.0)
+
+Daily Goal links to Workout and Food; You contains local setup, review and settings. Optional local onboarding stores timeframe, measurements, equipment, cuisine and supplements without accounts. The resting-energy estimate is explained and is not a calorie allowance. Guided sessions offer movement alternatives and separately record active/break seconds; backgrounding pauses the timer.
+
+Opt-in reminders use native channels, inexact daytime alarms, notification permission on Android13+, and system DND. Water/walk actions log locally once per delivered action; wind-up opens You. Delivery can be delayed by Android/OEM battery policy. Settings are device-local.
+
+Photo estimates require your Gemini key in You → Settings & backup → Connections. Capture uses a temporary granted private content URI; the resized/re-encoded JPEG strips original metadata and is sent only after native consent. Review and use the estimate before saving a meal. If Android recreates the activity while the camera is open, retake is required; no automatic resend occurs. Budget comparison uses your own INR serving prices in Food → My foods. No market price is assumed.
+
+No account, backend, Gradle, Jetpack, exact-alarm access, DND bypass or broad media/storage permission was added. The camera is delegated to an installed camera app. New permissions: POST_NOTIFICATIONS and RECEIVE_BOOT_COMPLETED.
+
+Optional development browser smoke: `BROWSER_EXECUTABLE=/path/to/chrome-headless-shell node tests/iterations-browser.cjs` with Playwright available to the developer. The browser uses a disposable preview bridge; it is not Android verification.
