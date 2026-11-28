@@ -1,11 +1,18 @@
 # Form & Strength — offline Android companion
 
-**1.7.1 · version code 15**. Daily food, protein, water, habits and strength routines in an offline Android app. Bundled web UI inside an Android WebView; native SQLite stores all records. No app account, analytics or ads. Core logging works offline. Optional Gemini uses native HTTPS only after the user approves a meal; optional Health Connect reads supported device data.
+**1.8.0 · version code 16**. Daily food, protein, water, habits and strength routines in an offline Android app. Bundled web UI inside an Android WebView; native SQLite stores all records. No app account, analytics or ads. Core logging works offline. Optional Gemini uses native HTTPS only after the user approves a meal; optional Health Connect reads supported device data.
+
+## New in 1.8
+
+- Home toolkit: 12 shortcuts for meals, workouts, activities, water, all seven habits, check-in, progress, saved portions, meal camera, Health Connect, reminders and user settings.
+- You: Overview, Trends and Settings tabs, editable personal details and goals, direct access to connections, backups and published legal pages.
+- Optional local setup no longer blocks first use. Core logging remains available without filling in measurements.
+- Shared dates, existing SQLite schema and the original signing identity are retained. See `docs/RELEASE_1.8.0.md` for evidence and device-only limits.
 
 ## Install as an update
 
 1. In the current app, use Profile → Backup & restore → Back up to a file. In older versions the backup button is directly in Profile.
-2. Download and open `Form-Strength-1.7.1.apk` on your Android phone. Tap **Update**, without uninstalling.
+2. Download and open `Form-Strength-1.8.0.apk` on your Android phone. Tap **Update**, without uninstalling.
 3. Open Profile to set your own starting measurements and optional goals. All fields are optional. Existing check-ins and meals remain intact.
 
 Application ID `com.logan.formstrength` and the original signing key are unchanged. Android 8.0+ with a current System WebView is supported by the build. Device installation and native runtime behavior remain unverified; see `ANDROID_TEST_REPORT.md`.
@@ -88,6 +95,8 @@ No account, backend, Gradle, Jetpack, exact-alarm access, DND bypass or broad me
 
 Optional development browser smoke: `BROWSER_EXECUTABLE=/path/to/chrome-headless-shell node tests/iterations-browser.cjs` with Playwright available to the developer. The browser uses a disposable preview bridge; it is not Android verification.
 
-## Play Store candidate 1.7.1
+## Play Store candidate 1.8.0
 
 API 36 candidate with corrected text/photo privacy disclosures. Build the signed AAB with `bash scripts/build-bundle.sh` after setting the existing signing variables and `BUNDLETOOL_JAR`. See `docs/play-store/RELEASE_CHECKLIST.md`. A validated bundle is packaging evidence, not device QA, Play acceptance or publication.
+
+`home-hub.js` owns Home shortcuts and user-section tabs; existing controllers still own persistence and feature logic. Optional browser acceptance: `NODE_PATH=/path/to/playwright/node_modules BROWSER_EXECUTABLE=/path/to/chrome-headless-shell node tests/home-hub-browser.cjs`. It uses synthetic localStorage records, not Android SQLite.

@@ -6,18 +6,13 @@
  function bmr(p){if(!Number.isFinite(p.age)||!Number.isFinite(p.height)||!Number.isFinite(p.startingWeight)||!['female','male'].includes(p.sex))return null;return Math.round(10*p.startingWeight+6.25*p.height-5*p.age+(p.sex==='male'?5:-161));}
  function updateIteration(){
   const log=logs.find(l=>l.day===selectedDay)||{},totals=TrackerCore.nutrients(foodEntries.filter(f=>f.day===selectedDay));
-  $('dailyGoalCopy').textContent=profile.name?profile.name+', make room for one good step.':'A little movement. A meal that fuels you.';
+  $('dailyGoalCopy').textContent=profile.name?'Your meals, movement and daily habits, together.':'Everything you need, in one place.';
   $('dailyGoalStatus').textContent=(log.workout?'Movement recorded':'Movement: your choice')+' · '+(totals.count?totals.count+' meal'+(totals.count===1?'':'s')+' logged':'Food: not logged')+(log.waterMl!=null?' · '+rounded(log.waterMl)+' ml water':'');
   $('youSummary').textContent=(profile.name?profile.name+' · ':'')+(profile.goalMode?({lose:'Gradual weight reduction',gain:'Gradual weight gain',maintain:'Build a steady routine'}[profile.goalMode]):'Your starting point, your own pace')+(profile.goalMonths?' · '+profile.goalMonths+' month plan':'');
   const rest=bmr(profile);$('restingEstimate').textContent=rest?'Resting energy estimate ≈ '+rest.toLocaleString()+' kcal/day · Mifflin–St Jeor. Excludes activity; not a food allowance.':'Resting energy estimate is optional. Complete local setup if you want to see its assumptions.';
   renderBudget();
  }
  render=function(){originalRender();updateIteration();};
- // Keep Home actionable; personal review belongs in You.
- const personalGoal=document.querySelector('.compact-goal');if(personalGoal)$('progress').insertBefore(personalGoal,$('progress').children[2]);
- document.querySelector('#today > .screen-head').hidden=true;
- [...$('progress').children].filter(e=>e.tagName==='H1').forEach(e=>e.hidden=true);
- const labels=document.querySelectorAll('#progress > .eyebrow,#progress > .subtitle');labels.forEach(e=>e.hidden=true);
  const setupMap={name:'setupName',goalMode:'setupGoalMode',goalWeight:'setupGoalWeight',goalMonths:'setupMonths',age:'setupAge',height:'setupHeight',startingWeight:'setupWeight',sex:'setupSex',equipment:'setupEquipment',cuisine:'setupCuisine',supplements:'setupSupplements'};
  let setupStep=0,setupBusy=false;
  function setupData(){const p={...profile,completed:true,onboardingVersion:1};for(const[k,id]of Object.entries(setupMap)){const value=$(id).value.trim();if(['goalWeight','goalMonths','age','height','startingWeight'].includes(k)){if(value)p[k]=Number(value);else delete p[k];}else p[k]=value;}return p;}
@@ -31,8 +26,7 @@
  $('setupClose').onclick=closeSetup;$('onboardingDialog').addEventListener('cancel',e=>{e.preventDefault();e.stopImmediatePropagation();closeSetup();},true);
  $('localSetupForm').addEventListener('input',previewBmr);
  $('localSetupForm').onsubmit=async e=>{e.preventDefault();if(setupBusy)return;const visible=[...document.querySelectorAll('[data-setup-step="'+setupStep+'"] input')];if(visible.some(i=>!i.reportValidity()))return;if(setupStep<2){setupStep++;stepSetup();return;}setupBusy=true;stepSetup();$('setupCalculation').hidden=false;$('setupCalculationCopy').textContent='Calculating your optional resting estimate and saving on this phone…';try{profile=(await request('/api/profile','PUT',setupData())).profile;$('setupCalculationCopy').textContent='Your local setup is saved.';$('onboardingDialog').close();document.body.style.overflow='';render();navigate('today');notify('Your starting point is saved. Let’s go.');}catch(err){showMessage('localSetupMessage',err.message,true);$('setupCalculationCopy').textContent='Nothing new was saved. Check your details and retry.';}finally{setupBusy=false;stepSetup();}};
- // Existing users retain their setup and are never forced through a new questionnaire.
- let prompted=false;const rendered=render;render=function(){rendered();if(!prompted&&profileLoaded&&!profile.completed&&!profile.onboardingVersion){prompted=true;openLocalSetup();}};
+ // Local setup is optional and opened explicitly from Home or You.
  // New dialogs must participate in the same Back contract as original sheets.
  const back=window.handleNativeBack;window.handleNativeBack=()=>{if($('onboardingDialog').open){closeSetup();return;}if($('workoutPlayer').open){closePlayer();return;}return back();};
  let player=null,tickLast=0;

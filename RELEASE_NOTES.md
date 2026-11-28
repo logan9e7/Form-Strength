@@ -1,3 +1,14 @@
+# 1.8.0 — Home toolkit and user section
+
+- New Home grid gives direct access to all 12 feature destinations with honest loading, empty and connection states.
+- You is organized into Overview, Trends and Settings; profile/goals, connections, reminders, backup and legal pages are easy to reach.
+- Show all seven quick habit controls to match the recorded total.
+- Optional setup is explicit, so fresh users can start logging without completing a questionnaire.
+- Preserve selected dates, manual records, original package and signer, schema 5 and API 36 target.
+- Harden browser-preview injection and controller asset checks against HTML attribute ordering.
+
+Automated/browser evidence is separate from pending Android installation, upgrade, OS permissions, camera and live integration validation. This is a testing candidate, not a production-readiness claim.
+
 # 1.7.0 — three PDF iterations
 
 - New Daily Goal home, local-only onboarding with optional resting estimate, Workout/Food transitions, top Back and You review/settings.
